@@ -21,6 +21,8 @@ local LoadingScreen = Gui:FindFirstChild("LoadingScreen")
 local MainMenu = Gui:FindFirstChild("MainMenu")
 
 local Popups = Gui:WaitForChild("Popups")
+-- Popups is a transparent, non-interactive container; if it is hidden none of its panels can show.
+Popups.Visible = true
 local RadioPanel = Popups:WaitForChild("RadioPanel")
 
 local CloseButton = RadioPanel:WaitForChild("CloseButton")
