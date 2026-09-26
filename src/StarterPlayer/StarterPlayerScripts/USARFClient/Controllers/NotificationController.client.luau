@@ -72,12 +72,15 @@ end
 -- when it is hidden), so they never cover the radio / Protection System in the bottom-right.
 local function applyNotificationLayout()
 	local healthPanel = getVisibleHealthPanel()
+	local inset = GuiService:GetGuiInset()
 	local left = LEFT_PADDING
-	local top = GuiService:GetGuiInset().Y + UI_GAP
+	local top = inset.Y + UI_GAP
 
 	if healthPanel then
-		left = healthPanel.AbsolutePosition.X
-		top = healthPanel.AbsolutePosition.Y + healthPanel.AbsoluteSize.Y + UI_GAP
+		-- AbsolutePosition is measured below the top bar inset, but this ScreenGui ignores the
+		-- inset, so add it back to line up with the panel on screen.
+		left = healthPanel.AbsolutePosition.X + inset.X
+		top = healthPanel.AbsolutePosition.Y + inset.Y + healthPanel.AbsoluteSize.Y + UI_GAP
 	end
 
 	container.AnchorPoint = Vector2.new(0, 0)

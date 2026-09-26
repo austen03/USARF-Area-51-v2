@@ -37,14 +37,15 @@ local lastVIPs = {}
 local lastZones = {}
 
 local BASE_WIDTH = 410
--- Kept compact so the radio HUD fits above it; both pages scroll.
+-- Kept compact so it fits above the radio HUD; both pages scroll.
 local BASE_HEIGHT = 320
 local RIGHT_PADDING = 24
 local BOTTOM_PADDING = 24
+local RADIO_GAP = 10
 
--- Pixels from the bottom of the screen to the top of the open panel. RadioController reads
--- this to stack the radio above the panel instead of the two overlapping.
-local PANEL_TOP_ATTRIBUTE = "USARF_ProtectionPanelTopOffset"
+-- Pixels from the bottom of the screen to the top of the radio HUD while it is shown
+-- (published by RadioController). The radio keeps the corner; this panel stacks above it.
+local RADIO_TOP_ATTRIBUTE = "USARF_RadioPanelTopOffset"
 
 local function notify(message)
 	if message == nil or message == "" then
@@ -69,14 +70,6 @@ local function safeInvoke(action, data)
 	return result
 end
 
-local function publishPanelTop()
-	if trackerOpen and mainFrame then
-		LocalPlayer:SetAttribute(PANEL_TOP_ATTRIBUTE, BOTTOM_PADDING + mainFrame.AbsoluteSize.Y)
-	else
-		LocalPlayer:SetAttribute(PANEL_TOP_ATTRIBUTE, nil)
-	end
-end
-
 local function updateResponsiveLayout()
 	if not mainFrame then
 		return
@@ -95,8 +88,15 @@ local function updateResponsiveLayout()
 
 	uiScale.Scale = scale
 
+	local bottomOffset = BOTTOM_PADDING
+	local radioTop = tonumber(LocalPlayer:GetAttribute(RADIO_TOP_ATTRIBUTE))
+
+	if radioTop then
+		bottomOffset = radioTop + RADIO_GAP
+	end
+
 	mainFrame.AnchorPoint = Vector2.new(1, 1)
-	mainFrame.Position = UDim2.new(1, -RIGHT_PADDING, 1, -BOTTOM_PADDING)
+	mainFrame.Position = UDim2.new(1, -RIGHT_PADDING, 1, -bottomOffset)
 	mainFrame.Size = UDim2.fromOffset(BASE_WIDTH, BASE_HEIGHT)
 end
 
@@ -609,9 +609,6 @@ local function createGui()
 		zoneAction("RemoveZone", "KZ", kzBox.Text)
 	end)
 
-	-- The panel's on-screen height changes with the responsive UIScale.
-	mainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(publishPanelTop)
-
 	setTab("Tracker")
 	updateResponsiveLayout()
 end
@@ -663,14 +660,12 @@ local function openTracker(result)
 	})
 
 	updateResponsiveLayout()
-	publishPanelTop()
 	startRefreshLoop()
 end
 
 local function closeTracker()
 	trackerOpen = false
 	LocalPlayer:SetAttribute("USARF_ProtectionSystemOpen", false)
-	publishPanelTop()
 
 	if screenGui then
 		screenGui.Enabled = false
@@ -717,6 +712,9 @@ ContextActionService:BindAction(
 if Camera then
 	Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateResponsiveLayout)
 end
+
+-- Re-stack whenever the radio HUD shows, hides or resizes.
+LocalPlayer:GetAttributeChangedSignal(RADIO_TOP_ATTRIBUTE):Connect(updateResponsiveLayout)
 
 LocalPlayer:GetPropertyChangedSignal("Team"):Connect(function()
 	closeTracker()
