@@ -1,0 +1,5 @@
+local ServerScriptService = game:GetService("ServerScriptService")
+local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
+require(Services:WaitForChild("AvatarBlacklistService")).Start()
+require(Services:WaitForChild("VoiceModerationService")).Start()
+print("[CoreModerationController] Started")
