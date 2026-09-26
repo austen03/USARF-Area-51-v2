@@ -80,10 +80,30 @@ local function getBottomOffsetAbove(guiObject)
 	return math.max(DEFAULT_BOTTOM_PADDING, viewportHeight - topY + UI_GAP)
 end
 
+-- Top of the notification stack when it sits in the top-right: just below the custom
+-- leaderboard's visible rows, so it moves down as more players join.
+local function getTopBelowLeaderboard()
+	local leaderboardGui = playerGui:FindFirstChild("USARFLeaderboard")
+	local board = leaderboardGui and leaderboardGui.Enabled and leaderboardGui:FindFirstChild("MainFrame")
+
+	if board and board.Visible then
+		local rows = board:FindFirstChild("ScrollFrame")
+		local visibleHeight = board.AbsoluteSize.Y
+
+		if rows and rows:IsA("ScrollingFrame") then
+			visibleHeight = math.min(rows.AbsoluteCanvasSize.Y, board.AbsoluteSize.Y)
+		end
+
+		return board.AbsolutePosition.Y + visibleHeight + UI_GAP
+	end
+
+	return 110
+end
+
 local function applyNotificationLayout()
 	if player:GetAttribute("USARF_ProtectionSystemOpen") == true then
 		container.AnchorPoint = Vector2.new(1, 0)
-		container.Position = UDim2.new(1, -RIGHT_PADDING, 0, 110)
+		container.Position = UDim2.new(1, -RIGHT_PADDING, 0, getTopBelowLeaderboard())
 		container.Size = CONTAINER_SIZE
 
 		layout.VerticalAlignment = Enum.VerticalAlignment.Top

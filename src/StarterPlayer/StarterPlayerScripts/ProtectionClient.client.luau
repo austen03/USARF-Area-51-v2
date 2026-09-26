@@ -35,12 +35,16 @@ local busy = false
 local canManageZones = false
 local lastVIPs = {}
 local lastZones = {}
-local hiddenRadioObjects = {}
 
 local BASE_WIDTH = 410
-local BASE_HEIGHT = 500
+-- Kept compact so the radio HUD fits above it; both pages scroll.
+local BASE_HEIGHT = 320
 local RIGHT_PADDING = 24
 local BOTTOM_PADDING = 24
+
+-- Pixels from the bottom of the screen to the top of the open panel. RadioController reads
+-- this to stack the radio above the panel instead of the two overlapping.
+local PANEL_TOP_ATTRIBUTE = "USARF_ProtectionPanelTopOffset"
 
 local function notify(message)
 	if message == nil or message == "" then
@@ -65,45 +69,11 @@ local function safeInvoke(action, data)
 	return result
 end
 
-local function findRadioObjects()
-	local objects = {}
-
-	for _, descendant in ipairs(PlayerGui:GetDescendants()) do
-		if descendant:IsA("GuiObject") then
-			local name = string.lower(descendant.Name)
-
-			if name == "radiopanel"
-				or name == "radio"
-				or name == "radioframe"
-				or name == "radioui"
-				or name == "radioholder"
-				or name == "mainradio"
-				or name == "radio_main"
-				or name == "radiocontainer" then
-				table.insert(objects, descendant)
-			end
-		end
-	end
-
-	return objects
-end
-
-local function setRadioHidden(hidden)
-	if hidden then
-		table.clear(hiddenRadioObjects)
-
-		for _, object in ipairs(findRadioObjects()) do
-			hiddenRadioObjects[object] = object.Visible
-			object.Visible = false
-		end
+local function publishPanelTop()
+	if trackerOpen and mainFrame then
+		LocalPlayer:SetAttribute(PANEL_TOP_ATTRIBUTE, BOTTOM_PADDING + mainFrame.AbsoluteSize.Y)
 	else
-		for object, wasVisible in pairs(hiddenRadioObjects) do
-			if object and object.Parent then
-				object.Visible = wasVisible
-			end
-		end
-
-		table.clear(hiddenRadioObjects)
+		LocalPlayer:SetAttribute(PANEL_TOP_ATTRIBUTE, nil)
 	end
 end
 
@@ -523,12 +493,17 @@ local function createGui()
 		vipListFrame.CanvasSize = UDim2.fromOffset(0, vipLayout.AbsoluteContentSize.Y + 12)
 	end)
 
-	zonesPage = Instance.new("Frame")
+	-- The whole Zones page scrolls (controls + zone list) so it still works in the compact panel.
+	zonesPage = Instance.new("ScrollingFrame")
 	zonesPage.Name = "ZonesPage"
 	zonesPage.Position = UDim2.fromOffset(14, 116)
 	zonesPage.Size = UDim2.new(1, -28, 1, -130)
 	zonesPage.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 	zonesPage.BorderSizePixel = 0
+	zonesPage.ScrollBarThickness = 5
+	zonesPage.ScrollingDirection = Enum.ScrollingDirection.Y
+	zonesPage.CanvasSize = UDim2.fromOffset(0, 0)
+	zonesPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	zonesPage.Visible = false
 	zonesPage.Parent = mainFrame
 
@@ -561,14 +536,14 @@ local function createGui()
 	noZoneAccessLabel.Visible = false
 	noZoneAccessLabel.Parent = zonesPage
 
-	zonesListFrame = Instance.new("ScrollingFrame")
+	-- Grows with its rows; ZonesPage does the scrolling.
+	zonesListFrame = Instance.new("Frame")
 	zonesListFrame.Name = "ZonesList"
 	zonesListFrame.Position = UDim2.fromOffset(8, 196)
-	zonesListFrame.Size = UDim2.new(1, -16, 1, -204)
+	zonesListFrame.Size = UDim2.new(1, -16, 0, 0)
+	zonesListFrame.AutomaticSize = Enum.AutomaticSize.Y
 	zonesListFrame.BackgroundTransparency = 1
 	zonesListFrame.BorderSizePixel = 0
-	zonesListFrame.ScrollBarThickness = 5
-	zonesListFrame.CanvasSize = UDim2.fromOffset(0, 0)
 	zonesListFrame.Parent = zonesPage
 
 	local zonesLayout = Instance.new("UIListLayout")
@@ -576,9 +551,9 @@ local function createGui()
 	zonesLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	zonesLayout.Parent = zonesListFrame
 
-	zonesLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		zonesListFrame.CanvasSize = UDim2.fromOffset(0, zonesLayout.AbsoluteContentSize.Y + 12)
-	end)
+	local zonesPadding = Instance.new("UIPadding")
+	zonesPadding.PaddingBottom = UDim.new(0, 12)
+	zonesPadding.Parent = zonesListFrame
 
 	trackerButton.MouseButton1Click:Connect(function()
 		setTab("Tracker")
@@ -634,6 +609,9 @@ local function createGui()
 		zoneAction("RemoveZone", "KZ", kzBox.Text)
 	end)
 
+	-- The panel's on-screen height changes with the responsive UIScale.
+	mainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(publishPanelTop)
+
 	setTab("Tracker")
 	updateResponsiveLayout()
 end
@@ -677,7 +655,6 @@ local function openTracker(result)
 	trackerOpen = true
 	screenGui.Enabled = true
 	LocalPlayer:SetAttribute("USARF_ProtectionSystemOpen", true)
-	setRadioHidden(true)
 
 	applyPayload(result or {
 		VIPs = {},
@@ -686,13 +663,14 @@ local function openTracker(result)
 	})
 
 	updateResponsiveLayout()
+	publishPanelTop()
 	startRefreshLoop()
 end
 
 local function closeTracker()
 	trackerOpen = false
 	LocalPlayer:SetAttribute("USARF_ProtectionSystemOpen", false)
-	setRadioHidden(false)
+	publishPanelTop()
 
 	if screenGui then
 		screenGui.Enabled = false

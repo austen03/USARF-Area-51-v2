@@ -275,6 +275,13 @@ local function applyHudLayout()
 		RadioPanel.Size = UDim2.new(0, 500, 0, 300)
 	end
 
+	-- When the Protection System panel is open (same corner), stack the radio above it.
+	local protectionTop = tonumber(Player:GetAttribute("USARF_ProtectionPanelTopOffset"))
+
+	if protectionTop then
+		RadioPanel.Position = UDim2.new(1, RadioPanel.Position.X.Offset, 1, -(protectionTop + 10))
+	end
+
 	RadioPanel.ClipsDescendants = true
 	RadioPanel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
 	makeCorner(RadioPanel, 12)
@@ -1015,6 +1022,8 @@ applyHudLayout()
 if workspace.CurrentCamera then
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(applyHudLayout)
 end
+
+Player:GetAttributeChangedSignal("USARF_ProtectionPanelTopOffset"):Connect(applyHudLayout)
 
 RadioPanel.Visible = false
 RadioButton.Visible = false
