@@ -47,7 +47,9 @@ local ATTR_NAME_OVERRIDE = "USARF_NameTagNameOverride"
 local ATTR_RANK_OVERRIDE = "USARF_NameTagRankOverride"
 local ATTR_COLOR_OVERRIDE = "USARF_NameTagColorOverride"
 
-local PROFILE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=medals"
+-- Nametag badges (Nitro, Veteran, Distinguished Service, Honor). Medals/ribbons live on the
+-- separate "medals" tab and are handled by RibbonRackService.
+local BADGE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=badges"
 
 local DEPARTMENT_RANK_SHEET_URLS = {
 	EngineeringTechnical = "",
@@ -141,8 +143,8 @@ local TEAM_COLORS = {
 local CUSTOM_TITLES = {}
 local TEAM_RANK_OVERRIDES = {}
 
-local profileCache = {}
-local profileLastFetch = 0
+local badgeSheetCache = {}
+local badgeSheetLastFetch = 0
 
 local departmentRankCaches = {}
 local departmentRankLastFetch = {}
@@ -236,18 +238,18 @@ local function getRowValue(row, keys)
 	return nil
 end
 
-local function fetchProfileCache()
-	if PROFILE_SHEET_URL == "" then
+local function fetchBadgeSheetCache()
+	if BADGE_SHEET_URL == "" then
 		return
 	end
 
-	if os.time() - profileLastFetch < CACHE_SECONDS then
+	if os.time() - badgeSheetLastFetch < CACHE_SECONDS then
 		return
 	end
 
-	profileLastFetch = os.time()
+	badgeSheetLastFetch = os.time()
 
-	local decoded = fetchJson(PROFILE_SHEET_URL)
+	local decoded = fetchJson(BADGE_SHEET_URL)
 	if not decoded then
 		return
 	end
@@ -266,44 +268,38 @@ local function fetchProfileCache()
 		}))
 
 		if userId then
-			local awards = {}
-			local awardsText = tostring(getRowValue(row, {
+			local sheetBadges = {}
+			-- Matched ignoring case, spaces and ":" ("Badges:" works too).
+			-- "Awards" is kept because the sheet web app may rename the column to it.
+			local badgesText = tostring(getRowValue(row, {
+				"Badges",
 				"Awards",
-				"awards",
-				"Medals",
-				"medals",
-				"MedalsEarned",
-				"medalsEarned",
-				"Medals Earned",
-				"Medals Earned:",
 			}) or "")
 
-			for award in string.gmatch(awardsText, "([^,]+)") do
-				local key = string.lower(trimText(award):gsub("%s+", ""))
+			for badge in string.gmatch(badgesText, "([^,]+)") do
+				local key = string.lower(trimText(badge):gsub("%s+", ""))
 
 				if key == "nitro" or key == "nitrosupporter" then
-					awards.Nitro = true
+					sheetBadges.Nitro = true
 				elseif key == "veteran" or key == "serviceveteran" then
-					awards.Veteran = true
+					sheetBadges.Veteran = true
 				elseif key == "distinguishedservice" or key == "distinguished" then
-					awards.DistinguishedService = true
+					sheetBadges.DistinguishedService = true
 				elseif key == "honor" or key == "honorable" then
-					awards.Honor = true
+					sheetBadges.Honor = true
 				end
 			end
 
-			newCache[userId] = {
-				awards = awards,
-			}
+			newCache[userId] = sheetBadges
 		end
 	end
 
-	profileCache = newCache
+	badgeSheetCache = newCache
 end
 
-local function getProfile(player)
-	fetchProfileCache()
-	return profileCache[player.UserId]
+local function getSheetBadges(player)
+	fetchBadgeSheetCache()
+	return badgeSheetCache[player.UserId]
 end
 
 local function fetchDepartmentRankCache(teamKey)
@@ -576,7 +572,7 @@ local function getBadgeMap(player)
 	local modRank = safeRank(player, MOD_GROUP_ID)
 	local devRank = safeRank(player, DEV_GROUP_ID)
 	local teamKey = player:GetAttribute("USARF_TeamKey")
-	local profile = getProfile(player)
+	local sheetBadges = getSheetBadges(player)
 
 	if mainRank == 255 then
 		badges.Owner = true
@@ -610,19 +606,19 @@ local function getBadgeMap(player)
 		badges.Verified = true
 	end
 
-	if profile and profile.awards then
-		if profile.awards.Nitro then
+	if sheetBadges then
+		if sheetBadges.Nitro then
 			badges.Nitro = true
 		end
 
-		if profile.awards.Veteran then
+		if sheetBadges.Veteran then
 			badges.Veteran = true
 		end
 
-		if profile.awards.DistinguishedService then
+		if sheetBadges.DistinguishedService then
 			badges.DistinguishedService = true
 		end
-		if profile.awards.Honor then
+		if sheetBadges.Honor then
 			badges.Honor = true
 		end
 	end
