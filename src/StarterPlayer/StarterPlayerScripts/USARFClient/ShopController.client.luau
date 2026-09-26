@@ -561,7 +561,13 @@ local function updateCanvas()
 	end)
 end
 
+-- "Remaining" labels on shop cards for active timed boosts, ticked every second by the
+-- countdown loop at the bottom of this script.
+local boostCountdowns = {}
+
 local function clearShopItems()
+	table.clear(boostCountdowns)
+
 	for _, child in ipairs(list:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -945,6 +951,11 @@ local function createItemCard(item)
 	elseif item.ItemType == "TimedBoost" and boostRemaining > 0 then
 		purchaseButton.Text = "ACTIVE"
 		price.Text = "Remaining: " .. formatTime(boostRemaining)
+
+		table.insert(boostCountdowns, {
+			Label = price,
+			BoostKey = boostKey,
+		})
 	else
 		purchaseButton.Text = "BUY"
 
@@ -1340,8 +1351,29 @@ end
 
 task.spawn(function()
 	while true do
-		if shopFrame.Visible and selectedCategory == "Inventory" then
-			renderInventory()
+		if shopFrame.Visible then
+			if selectedCategory == "Inventory" then
+				renderInventory()
+			elseif #boostCountdowns > 0 then
+				-- Tick the countdown text in place (re-rendering every second would reset the
+				-- scroll position and any in-progress purchase). Re-render once a boost ends so
+				-- its card switches back to BUY.
+				local anyExpired = false
+
+				for _, countdown in ipairs(boostCountdowns) do
+					local remaining = getBoostRemaining(countdown.BoostKey)
+
+					if remaining > 0 then
+						countdown.Label.Text = "Remaining: " .. formatTime(remaining)
+					else
+						anyExpired = true
+					end
+				end
+
+				if anyExpired then
+					renderShopItems()
+				end
+			end
 		end
 
 		task.wait(1)

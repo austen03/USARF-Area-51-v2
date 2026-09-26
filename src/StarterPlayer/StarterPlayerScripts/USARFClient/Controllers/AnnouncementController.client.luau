@@ -10,6 +10,8 @@ local GetAnnouncementsRemote = Remotes:WaitForChild("GetAnnouncements")
 
 local Gui = PlayerGui:WaitForChild("USARFGui")
 local Popups = Gui:WaitForChild("Popups")
+-- Popups is a transparent, non-interactive container; if it is hidden none of its panels can show.
+Popups.Visible = true
 local TopBar = Gui:WaitForChild("TopBar")
 
 local AnnouncementPanel = Popups:WaitForChild("AnnouncementPanel")
