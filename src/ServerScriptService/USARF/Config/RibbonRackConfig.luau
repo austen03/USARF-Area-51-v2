@@ -116,11 +116,8 @@ RibbonRackConfig.Medals = {
 	{
 		Key = "SecurityServiceMedal",
 		DisplayName = "Security Service Medal",
-		ImageId = 103089204669598,
+		ImageId = 82697564051238,
 		Priority = 8,
-		-- A second ID was supplied with the same name. Swap to this ID if it is
-		-- the intended version: 82697564051238
-		AlternateImageIds = { 82697564051238 },
 	},
 	{
 		Key = "IntelligenceMedal",
