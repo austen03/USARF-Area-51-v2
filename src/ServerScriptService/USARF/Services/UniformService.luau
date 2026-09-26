@@ -42,6 +42,17 @@ local DEFAULT_RANK_TAB_SURFACE_HEIGHT = 0.18
 local DEFAULT_PATCH_DEPTH_OFFSET = 0.28
 local DEFAULT_RANK_TAB_DEPTH_OFFSET = 0.28
 
+-- Used when an insignia snaps to the body-part surface (UniformConfig.SnapInsigniaToSurface).
+local DEFAULT_INSIGNIA_SURFACE_GAP = 0.004
+
+-- Points (in half-widths / half-heights of the insignia) sampled when measuring the
+-- body-part surface underneath it: center, corners and edge midpoints.
+local SURFACE_SAMPLE_POINTS = {
+	Vector2.new(0, 0),
+	Vector2.new(-1, -1), Vector2.new(1, -1), Vector2.new(-1, 1), Vector2.new(1, 1),
+	Vector2.new(0, -1), Vector2.new(0, 1), Vector2.new(-1, 0), Vector2.new(1, 0),
+}
+
 local APPLY_DELAY_SECONDS = 0.35
 
 local BODY_PART_ALIASES: {[string]: string} = {
@@ -97,6 +108,10 @@ export type PatchDefinition = {
 	DepthOffset: number?,
 	FlipOutward: boolean?,
 	AlwaysOnTop: boolean?,
+	ImageRect: {number}?,
+	PreserveAspect: boolean?,
+	SnapToSurface: boolean?,
+	SurfaceGap: number?,
 }
 
 local function configValue(teamConfig: any?, key: string, defaultValue: any): any
@@ -113,6 +128,35 @@ end
 
 local function appendConnection(connection: RBXScriptConnection)
 	table.insert(connections, connection)
+end
+
+local function getAssetIdNumber(texture: any): number?
+	if typeof(texture) == "number" then
+		return texture
+	end
+
+	if texture == nil then
+		return nil
+	end
+
+	return tonumber(string.match(tostring(texture), "(%d+)%s*$"))
+end
+
+-- { x, y, width, height } of the visible insignia inside its image, from the patch
+-- definition or UniformConfig.ImageRects (keyed by asset id).
+local function getImageRect(patchInfo: PatchDefinition): {number}?
+	if patchInfo.ImageRect then
+		return patchInfo.ImageRect
+	end
+
+	local imageRects = UniformConfig.ImageRects
+	local assetId = getAssetIdNumber(patchInfo.Texture or patchInfo.Image or patchInfo.AssetId)
+
+	if typeof(imageRects) == "table" and assetId then
+		return imageRects[assetId]
+	end
+
+	return nil
 end
 
 local function textureToImage(texture: any): string
@@ -369,6 +413,18 @@ local function configureImageLabel(imageLabel: ImageLabel, image: string, patchI
 	imageLabel.Size = UDim2.fromScale(1, 1)
 	imageLabel.ScaleType = patchInfo.ScaleType or Enum.ScaleType.Stretch
 	imageLabel.ZIndex = 1
+
+	-- Crop away the image's transparent padding; the holder is sized to the crop's
+	-- proportions (see scaleHolderPart), so stretching it keeps the true shape.
+	local imageRect = getImageRect(patchInfo)
+
+	if imageRect then
+		imageLabel.ImageRectOffset = Vector2.new(imageRect[1], imageRect[2])
+		imageLabel.ImageRectSize = Vector2.new(imageRect[3], imageRect[4])
+	else
+		imageLabel.ImageRectOffset = Vector2.zero
+		imageLabel.ImageRectSize = Vector2.zero
+	end
 end
 
 local function configureSurfaceGuis(holderPart: BasePart, patchInfo: PatchDefinition)
@@ -432,6 +488,20 @@ local function scaleHolderPart(holderPart: BasePart, patchInfo: PatchDefinition,
 	local scale = patchInfo.Scale
 	local width = patchInfo.SurfaceWidth or defaultWidth
 	local height = patchInfo.SurfaceHeight or defaultHeight
+
+	-- Fit the insignia's real proportions inside SurfaceWidth x SurfaceHeight so it is
+	-- never squashed or stretched.
+	local imageRect = getImageRect(patchInfo)
+
+	if imageRect and patchInfo.PreserveAspect ~= false and imageRect[3] > 0 and imageRect[4] > 0 then
+		local aspect = imageRect[3] / imageRect[4]
+
+		if width / height > aspect then
+			width = height * aspect
+		else
+			height = width / aspect
+		end
+	end
 
 	holderPart.Size = Vector3.new(
 		math.max(width * getScaleComponent(scale, "X"), DEFAULT_PART_THICKNESS),
@@ -521,7 +591,55 @@ local function getDepthOffset(patchInfo: PatchDefinition, defaultTemplateName: s
 	return DEFAULT_PATCH_DEPTH_OFFSET
 end
 
-local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefinition, targetPartName: string?, defaultTemplateName: string): CFrame
+local function shouldSnapToSurface(patchInfo: PatchDefinition): boolean
+	if patchInfo.SnapToSurface ~= nil then
+		return patchInfo.SnapToSurface
+	end
+
+	return configValue(nil, "SnapInsigniaToSurface", true) ~= false
+end
+
+-- How far the target part's outer surface is from planePoint along outwardWorld,
+-- sampled under the whole insignia. The most outward hit wins, so a flat insignia never
+-- sinks into a rounded arm. Falls back to the part's bounding box if nothing is hit
+-- (e.g. the part has CanQuery off).
+local function measureSurfaceDistance(
+	targetPart: BasePart,
+	planePoint: Vector3,
+	orientation: CFrame,
+	outwardWorld: Vector3,
+	outwardLocal: Vector3,
+	width: number,
+	height: number
+): number
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { targetPart }
+
+	local reach = targetPart.Size.Magnitude + 1
+	local furthest: number? = nil
+
+	for _, sample in SURFACE_SAMPLE_POINTS do
+		local point = planePoint + orientation:VectorToWorldSpace(Vector3.new(sample.X * width / 2, sample.Y * height / 2, 0))
+		local result = workspace:Raycast(point + outwardWorld * reach, -outwardWorld * reach, params)
+
+		if result then
+			local distance = (result.Position - point):Dot(outwardWorld)
+
+			if not furthest or distance > furthest then
+				furthest = distance
+			end
+		end
+	end
+
+	if furthest then
+		return furthest
+	end
+
+	return math.abs(outwardLocal:Dot(targetPart.Size)) / 2
+end
+
+local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefinition, targetPartName: string?, defaultTemplateName: string, holderPart: BasePart): CFrame
 	if patchInfo.CFrameOffset then
 		return targetPart.CFrame * patchInfo.CFrameOffset
 	end
@@ -529,9 +647,6 @@ local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefiniti
 	local offset = patchInfo.Offset or Vector3.zero
 	local face = chooseOutsideFace(targetPartName or targetPart.Name, offset, patchInfo.Face)
 	local outwardLocal = getCorrectedOutwardLocal(targetPart, getOutwardLocalVector(face), patchInfo)
-	local depthOffset = getDepthOffset(patchInfo, defaultTemplateName)
-
-	local finalOffset = offset + outwardLocal * depthOffset
 	local outwardWorld = targetPart.CFrame:VectorToWorldSpace(outwardLocal)
 	local upWorld = targetPart.CFrame.UpVector
 
@@ -539,9 +654,31 @@ local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefiniti
 		upWorld = targetPart.CFrame.RightVector
 	end
 
+	local orientation = CFrame.lookAt(Vector3.zero, outwardWorld, upWorld) * CFrame.Angles(0, 0, getRollRadians(patchInfo.Rotation))
+
+	if shouldSnapToSurface(patchInfo) then
+		-- Offset only sets where along the surface the insignia goes; how far out it sits
+		-- comes from the wearer's actual body part, so it is flush on any avatar.
+		local inPlaneOffset = offset - outwardLocal * offset:Dot(outwardLocal)
+		local planePoint = (targetPart.CFrame * CFrame.new(inPlaneOffset)).Position
+		local surfaceDistance = measureSurfaceDistance(
+			targetPart,
+			planePoint,
+			orientation,
+			outwardWorld,
+			outwardLocal,
+			holderPart.Size.X,
+			holderPart.Size.Y
+		)
+		local gap = patchInfo.SurfaceGap or configValue(nil, "InsigniaSurfaceGap", DEFAULT_INSIGNIA_SURFACE_GAP)
+
+		return CFrame.new(planePoint + outwardWorld * (surfaceDistance + gap + holderPart.Size.Z / 2)) * orientation
+	end
+
+	local finalOffset = offset + outwardLocal * getDepthOffset(patchInfo, defaultTemplateName)
 	local position = (targetPart.CFrame * CFrame.new(finalOffset)).Position
 
-	return CFrame.lookAt(position, position + outwardWorld, upWorld) * CFrame.Angles(0, 0, getRollRadians(patchInfo.Rotation))
+	return CFrame.new(position) * orientation
 end
 
 local function weldHolderToTarget(holderPart: BasePart, targetPart: BasePart)
@@ -599,7 +736,7 @@ local function attachSurfaceGuiTemplate(character: Model, patchInfo: PatchDefini
 	local folder = getOrCreateAttachmentFolder(character)
 	clone.Parent = folder
 
-	local placement = getPlacementCFrame(targetPart, patchInfo, targetPartName, defaultTemplateName)
+	local placement = getPlacementCFrame(targetPart, patchInfo, targetPartName, defaultTemplateName, holderPart)
 
 	if clone:IsA("Model") then
 		clone:PivotTo(placement)
