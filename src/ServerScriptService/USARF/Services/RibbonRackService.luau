@@ -259,7 +259,7 @@ local function findMount(character)
 
 	local upperTorso = character:FindFirstChild("UpperTorso")
 	if upperTorso and upperTorso:IsA("BasePart") then
-		return upperTorso, upperTorso.CFrame * Config.Mount.UpperTorsoTopCenterOffset
+		return upperTorso, upperTorso.CFrame * Config.Mount.UpperTorsoOffset
 	end
 
 	return nil, nil
@@ -281,7 +281,19 @@ local function createRibbonImage(surfaceGui, definition, x, y, width, height, la
 	image.Position = UDim2.fromOffset(x, y)
 	image.Size = UDim2.fromOffset(width, height)
 	image.Image = "rbxassetid://" .. tostring(definition.ImageId)
-	image.ScaleType = Enum.ScaleType.Fit
+
+	-- Crop away the image's transparent padding and stretch the ribbon to fill its slot,
+	-- so neighbouring ribbons touch.
+	local rect = definition.ImageRect
+	if rect then
+		local inset = Config.Rack.CropInsetPixels or 0
+		image.ImageRectOffset = Vector2.new(rect[1] + inset, rect[2] + inset)
+		image.ImageRectSize = Vector2.new(rect[3] - inset * 2, rect[4] - inset * 2)
+		image.ScaleType = Enum.ScaleType.Stretch
+	else
+		image.ScaleType = Enum.ScaleType.Fit
+	end
+
 	image.LayoutOrder = layoutOrder
 	image.ZIndex = 2
 	image:SetAttribute("DisplayName", definition.DisplayName)
@@ -302,8 +314,8 @@ local function createRack(character, definitions)
 	local rackHeight = rows * rackConfig.RibbonHeight
 		+ math.max(0, rows - 1) * rackConfig.VerticalGap
 
-	local anchorPart, topCenterCFrame = findMount(character)
-	if not anchorPart or not topCenterCFrame then
+	local anchorPart, mountCFrame = findMount(character)
+	if not anchorPart or not mountCFrame then
 		warn("[RibbonRackService] No UpperTorso or custom medal mount for " .. character:GetFullName())
 		return nil
 	end
@@ -311,7 +323,9 @@ local function createRack(character, definitions)
 	local rack = Instance.new("Part")
 	rack.Name = rackConfig.Name
 	rack.Size = Vector3.new(rackWidth, rackHeight, rackConfig.Depth)
-	rack.CFrame = topCenterCFrame * CFrame.new(0, -rackHeight / 2, 0)
+	-- Bottom-anchored racks grow upward from the mount point; top-anchored racks grow downward.
+	local growDirection = Config.Mount.AnchorEdge == "Bottom" and 1 or -1
+	rack.CFrame = mountCFrame * CFrame.new(0, growDirection * rackHeight / 2, 0)
 	rack.Transparency = 1
 	rack.CastShadow = false
 	rack.Anchored = false
