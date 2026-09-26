@@ -1,17 +1,17 @@
 return {
-	Name = "echo";
-	Aliases = {"="};
-	Description = "Echoes your text back to you.";
-	Group = "DefaultUtil";
+	Name = "echo",
+	Aliases = { "=" },
+	Description = "Echoes your text back to you.",
+	Group = "DefaultUtil",
 	Args = {
 		{
-			Type = "string";
-			Name = "Text";
-			Description = "The text."
+			Type = "string",
+			Name = "Text",
+			Description = "The text to echo.",
 		},
-	};
+	},
 
-	Run = function(_, text)
+	ClientRun = function(_, text: string): string
 		return text
-	end
+	end,
 }

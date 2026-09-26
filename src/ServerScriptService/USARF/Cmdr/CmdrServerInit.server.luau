@@ -11,8 +11,9 @@ local CmdrAdminConfig = require(ConfigFolder:WaitForChild("CmdrAdminConfig"))
 -- Default Cmdr commands disabled.
 -- Cmdr:RegisterDefaultCommands()
 
-Cmdr:RegisterTypesIn(CmdrFolder:WaitForChild("Types"))
-Cmdr:RegisterCommandsIn(CmdrFolder:WaitForChild("Commands"))
+-- Cmdr 1.13: call methods on Cmdr.Registry directly (Cmdr:Method() still works but prints a deprecation warning).
+Cmdr.Registry:RegisterTypesIn(CmdrFolder:WaitForChild("Types"))
+Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("Commands"))
 
 local function normalizeCommandName(name)
 	return string.lower(tostring(name or ""))
@@ -35,16 +36,12 @@ local function getDisplayGroup(commandName)
 end
 
 local function applyCommandGroups()
-	local registry = Cmdr.Registry
+	-- Cmdr 1.13 made Registry.Commands private; GetCommands() is the public replacement.
+	local commands = Cmdr.Registry:GetCommands()
 
-	if not registry or type(registry.Commands) ~= "table" then
-		warn("[USARF Cmdr] Could not apply command groups. Registry.Commands missing.")
-		return
-	end
-
-	for commandName, commandObject in pairs(registry.Commands) do
+	for _, commandObject in ipairs(commands) do
 		if type(commandObject) == "table" then
-			commandObject.Group = getDisplayGroup(commandName)
+			commandObject.Group = getDisplayGroup(commandObject.Name)
 		end
 	end
 end

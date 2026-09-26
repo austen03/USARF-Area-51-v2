@@ -1,23 +1,35 @@
-return {
-	Name = "blink";
-	Aliases = {"b"};
-	Description = "Teleports you to where your mouse is hovering.";
-	Group = "DefaultDebug";
-	Args = {};
+const ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-	ClientRun = function(context)
+const BuiltInGuards = ReplicatedStorage.CmdrClient.Shared.BuiltInGuards
+const HasCharacter = require(BuiltInGuards.HasCharacter) :: (number?) -> (any) -> string?
+
+return {
+	Name = "blink",
+	Aliases = { "b" },
+	Description = "Teleports you to where your mouse is hovering.",
+	Group = "DefaultDebug",
+	Args = {},
+	Guards = {
+		HasCharacter(),
+	},
+
+	ClientRun = function(context: any): string
 		-- We implement this here because player position is owned by the client.
 		-- No reason to bother the server for this!
 
-		local mouse = context.Executor:GetMouse()
-		local character = context.Executor.Character
+		const mouse = context.Executor:GetMouse() :: Mouse
+		const character = context.Executor.Character :: Model
 
-		if not character then
-			return "You don't have a character."
-		end
+		const raycastParams = RaycastParams.new()
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		raycastParams.FilterDescendantsInstances = { character }
+		raycastParams.IgnoreWater = true
+		raycastParams.RespectCanCollide = true
 
-		character:MoveTo(mouse.Hit.p)
+		const raycastResult = workspace:Raycast(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000, raycastParams)
+		const targetPosition = if raycastResult then raycastResult.Position else mouse.Hit.Position
+		character:MoveTo(targetPosition)
 
 		return "Blinked!"
-	end
+	end,
 }

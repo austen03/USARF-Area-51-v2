@@ -8,6 +8,9 @@ CmdrClient:SetActivationKeys({
 	Enum.KeyCode.F2,
 })
 
+-- Previously hard-coded inside the Cmdr library; set here so library updates don't wipe it.
+CmdrClient:SetPlaceName("AREA-51")
+
 local function toggleCmdr()
 	local success = pcall(function()
 		if typeof(CmdrClient.Toggle) == "function" then

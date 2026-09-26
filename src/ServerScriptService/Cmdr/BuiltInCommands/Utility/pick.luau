@@ -1,22 +1,21 @@
 return {
-	Name = "pick";
-	Aliases = {};
-	Description = "Picks a value out of a comma-separated list.";
-	Group = "DefaultUtil";
+	Name = "pick",
+	Description = "Picks a value out of a comma-separated list.",
+	Group = "DefaultUtil",
 	Args = {
 		{
-			Type = "integer";
-			Name = "Index to pick";
-			Description = "The index of the item you want to pick";
+			Type = "positiveInteger",
+			Name = "Index to pick",
+			Description = "The index of the item you want to pick.",
 		},
 		{
-			Type = "string";
-			Name = "CSV";
-			Description = "The comma-separated list"
-		}
-	};
+			Type = "string",
+			Name = "CSV",
+			Description = "The comma-separated list.",
+		},
+	},
 
-	Run = function(_, index, list)
+	ClientRun = function(_, index: number, list: string): string
 		return list:split(",")[index] or ""
-	end
+	end,
 }

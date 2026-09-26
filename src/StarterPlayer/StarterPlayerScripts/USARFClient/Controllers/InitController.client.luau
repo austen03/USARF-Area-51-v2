@@ -54,11 +54,8 @@ local function runCmdrCommand(commandText)
 	end
 
 	local success, result = pcall(function()
-		if typeof(CmdrClient.Run) == "function" then
-			CmdrClient:Run(commandText)
-		elseif CmdrClient.Dispatcher and typeof(CmdrClient.Dispatcher.EvaluateAndRun) == "function" then
-			CmdrClient.Dispatcher:EvaluateAndRun(commandText)
-		end
+		-- Cmdr 1.13: accessing unknown keys on CmdrClient errors, so call the Dispatcher directly.
+		CmdrClient.Dispatcher:Run(commandText)
 	end)
 
 	if not success then

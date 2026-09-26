@@ -1,6 +1,6 @@
-local Players = game:GetService("Players")
+const Players = game:GetService("Players")
 
-local TEXT_BOX_PROPERTIES = {
+const TEXT_BOX_PROPERTIES = {
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Color3.fromRGB(17, 17, 17),
 	BackgroundTransparency = 0.05,
@@ -8,8 +8,8 @@ local TEXT_BOX_PROPERTIES = {
 	BorderSizePixel = 20,
 	ClearTextOnFocus = false,
 	MultiLine = true,
-	Position = UDim2.new(0.5, 0, 0.5, 0),
-	Size = UDim2.new(0.5, 0, 0.4, 0),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromScale(0.5, 0.4),
 	Font = Enum.Font.Code,
 	TextColor3 = Color3.fromRGB(241, 241, 241),
 	TextWrapped = true,
@@ -23,38 +23,35 @@ local TEXT_BOX_PROPERTIES = {
 local lock
 
 return {
-	Name = "cmdredit";
-	Aliases = {};
-	Description = "Edit text in a TextBox";
-	Group = "DefaultUtil";
+	Name = "edit",
+	Description = "Edit text in a TextBox.",
+	Group = "DefaultUtil",
 	Args = {
 		{
-			Type = "string";
-			Name = "Input text";
-			Description = "The text you wish to edit";
-			Default = "";
+			Type = "string",
+			Name = "Input text",
+			Description = "The text you wish to edit.",
+			Default = "",
 		},
 		{
-			Type = "string";
-			Name = "Delimiter";
-			Description = "The character that separates each line";
-			Default = ",";
-		}
-	};
+			Type = "string",
+			Name = "Delimiter",
+			Description = "The character that separates each line.",
+			Default = ",",
+		},
+	},
 
-	ClientRun = function(context, text, delimeter)
+	ClientRun = function(context: any, text: string, delimeter: string): string
 		lock = lock or context.Cmdr.Util.Mutex()
 
-		local unlock = lock()
-
+		const unlock = lock()
 		context:Reply("Right-click on the text area to exit.", Color3.fromRGB(158, 158, 158))
 
-		local screenGui = Instance.new("ScreenGui")
+		const screenGui = Instance.new("ScreenGui")
 		screenGui.Name = "CmdrEditBox"
 		screenGui.ResetOnSpawn = false
 
-		local textBox = Instance.new("TextBox")
-
+		const textBox = Instance.new("TextBox")
 		for key, value in pairs(TEXT_BOX_PROPERTIES) do
 			textBox[key] = value
 		end
@@ -64,8 +61,7 @@ return {
 
 		screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-		local thread = coroutine.running()
-
+		const thread = coroutine.running()
 		textBox.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton2 then
 				coroutine.resume(thread, textBox.Text:gsub("\n", delimeter))
@@ -75,5 +71,5 @@ return {
 		end)
 
 		return coroutine.yield()
-	end
+	end,
 }

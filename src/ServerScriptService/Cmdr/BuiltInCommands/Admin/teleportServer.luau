@@ -1,21 +1,26 @@
-return function (_, fromPlayers, destination)
-	local cframe
+return function(_, fromPlayers: { Player }, destination: Player | Vector3): string
+	const cFrame = if typeof(destination) == "Instance"
+		then (destination.Character :: Model):GetPivot()
+		else CFrame.new(destination)
 
-	if typeof(destination) == "Instance" then
-		if destination.Character and destination.Character:FindFirstChild("HumanoidRootPart") then
-			cframe = destination.Character.HumanoidRootPart.CFrame
-		else
-			return "Target player has no character."
+	for _, player: Player in ipairs(fromPlayers) do
+		const character = player.Character
+		const humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+		if not humanoid then
+			continue
 		end
-	elseif typeof(destination) == "Vector3" then
-		cframe = CFrame.new(destination)
+
+		task.spawn(function()
+			if humanoid.SeatPart then
+				humanoid.Sit = false
+				humanoid:GetPropertyChangedSignal("SeatPart"):Wait()
+			end
+
+			if character:IsDescendantOf(workspace) then
+				character:PivotTo(cFrame)
+			end
+		end)
 	end
 
-	for _, player in ipairs(fromPlayers) do
-		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-			player.Character.HumanoidRootPart.CFrame = cframe
-		end
-	end
-
-	return ("Teleported %d players."):format(#fromPlayers)
+	return `Teleported {#fromPlayers} players.`
 end

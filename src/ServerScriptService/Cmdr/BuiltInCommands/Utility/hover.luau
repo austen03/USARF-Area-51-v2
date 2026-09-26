@@ -1,21 +1,21 @@
-local Players = game:GetService("Players")
+const Players = game:GetService("Players")
+
+const Player = Players.LocalPlayer
 
 return {
-	Name = "hover";
-	Description = "Returns the name of the player you are hovering over.";
-	Group = "DefaultUtil";
-	Args = {};
+	Name = "hover",
+	Description = "Returns the name of the player you are hovering over.",
+	Group = "DefaultUtil",
+	Args = {},
 
-	ClientRun = function()
-		local mouse = Players.LocalPlayer:GetMouse()
-		local target = mouse.Target
-
+	ClientRun = function(): string
+		const mouse = Player:GetMouse()
+		const target = mouse.Target
 		if not target then
 			return ""
 		end
 
-		local p = Players:GetPlayerFromCharacter(target:FindFirstAncestorOfClass("Model"))
-
-		return p and p.Name or ""
-	end
+		const targetPlayer = Players:GetPlayerFromCharacter(target:FindFirstAncestorOfClass("Model"))
+		return if targetPlayer then `{targetPlayer.DisplayName} @({targetPlayer.Name})` else ""
+	end,
 }
