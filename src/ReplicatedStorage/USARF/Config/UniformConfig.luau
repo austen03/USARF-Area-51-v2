@@ -12,6 +12,15 @@ UniformConfig.RemoveAvatarAccessories = true
 
 UniformConfig.KeepAccessoryTypes = {}
 
+-- Patches and rank tabs are placed on the wearer's actual body-part surface
+-- (measured when attached), so they sit flush on any avatar's arms. Offset
+-- still sets where along the arm they go; its outward part and DepthOffset are
+-- only used when this is false.
+UniformConfig.SnapInsigniaToSurface = true
+
+-- Gap between the arm surface and the back of a patch / rank tab, in studs.
+UniformConfig.InsigniaSurfaceGap = 0.004
+
 UniformConfig.Textures = {
 	Patches = {
 		USARF = "rbxassetid://96296737263493",
@@ -52,6 +61,47 @@ UniformConfig.Textures = {
 		SpecOpsExecutiveOfficer = "rbxassetid://92374043251066",
 		SpecOpsCommandingOfficer = "rbxassetid://133337268364933",
 	},
+}
+
+-- Where the visible patch / rank tab sits inside each image, in pixels:
+-- { x, y, width, height }. Most images have transparent space around the
+-- insignia (the patches are 682x1023 canvases), so each one is cropped to this
+-- and keeps its real proportions, fitted inside its SurfaceWidth x SurfaceHeight.
+-- Measured from the images; if you change a texture, update or add its entry
+-- (an image without an entry is shown whole, stretched to the surface).
+UniformConfig.ImageRects = {
+	-- Patches
+	[96296737263493] = { 59, 29, 904, 732 }, -- USARF
+	[128430680903691] = { 42, 323, 598, 335 }, -- USFlag
+	[88203309177343] = { 67, 40, 890, 805 }, -- Patch108th
+	[72097926817595] = { 41, 186, 599, 594 }, -- Patch137th
+	[91378974959668] = { 42, 144, 599, 605 }, -- PatchAIG
+	[90273570945891] = { 45, 145, 591, 669 }, -- PatchAlpha09
+	[115113685507411] = { 45, 124, 591, 686 }, -- PatchDelta01
+	[131268707920478] = { 45, 124, 591, 701 }, -- PatchIota12
+	[83303192080502] = { 45, 125, 591, 700 }, -- PatchCIA
+	[136330946357737] = { 44, 114, 592, 781 }, -- PatchFBI
+	[130212877547930] = { 45, 103, 591, 757 }, -- PatchFDS
+	[86893025350295] = { 32, 104, 617, 804 }, -- PatchUSSS
+
+	-- Rank tabs
+	[120650658583772] = { 8, 7, 652, 253 }, -- MilitaryEnlisted
+	[116892106559252] = { 9, 6, 653, 270 }, -- MilitaryNCO
+	[98206174296707] = { 5, 5, 653, 243 }, -- MilitaryOfficer
+	[139764990826446] = { 11, 6, 653, 220 }, -- MilitaryCommand
+	[129528026039312] = { 7, 8, 653, 196 }, -- MilitaryGeneral
+	[91524564539277] = { 8, 8, 707, 186 }, -- DeptPersonnel
+	[129770666144895] = { 8, 5, 707, 176 }, -- DeptSupervisor
+	[101288147579472] = { 10, 6, 707, 172 }, -- DeptManager
+	[114641863693378] = { 8, 8, 707, 182 }, -- DeptExecutive
+	[107095357375127] = { 6, 4, 707, 162 }, -- DeptAssistantDirector
+	[79353301628455] = { 8, 5, 707, 185 }, -- DeptDirector
+	[116916331182634] = { 5, 7, 705, 185 }, -- SpecOpsOperative
+	[128940166752738] = { 12, 10, 706, 176 }, -- SpecOpsSquadSergeant
+	[140125143037140] = { 5, 5, 705, 167 }, -- SpecOpsSquadExecutiveOfficer
+	[102304125869349] = { 11, 6, 705, 171 }, -- SpecOpsSquadLeader
+	[92374043251066] = { 7, 7, 705, 160 }, -- SpecOpsExecutiveOfficer
+	[133337268364933] = { 9, 5, 705, 191 }, -- SpecOpsCommandingOfficer
 }
 
 local function standardPatches(departmentPatch)
