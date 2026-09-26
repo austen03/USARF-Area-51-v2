@@ -1,3 +1,4 @@
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
@@ -114,18 +115,18 @@ local function applyResponsiveLayout()
 		scaleObject.Scale = scale
 	end
 
+	-- Sits just below Roblox's top bar (its height varies by device), with the notification
+	-- stack below it (NotificationController) so nothing lands on the bottom-right panels.
 	local left = 24
-	local top = 128
 
 	if viewport.X <= 900 then
 		left = 14
-		top = 118
 	elseif viewport.X <= 1200 then
 		left = 18
-		top = 124
 	end
 
-	root.Position = UDim2.new(0, left, 0, top)
+	local topbarHeight = GuiService:GetGuiInset().Y
+	root.Position = UDim2.new(0, left, 0, topbarHeight + 14)
 end
 
 local function setVisible(visible)

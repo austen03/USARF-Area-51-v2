@@ -12,7 +12,8 @@ RibbonRackConfig.Rack = {
 	RibbonHeight = 0.036,
 	HorizontalGap = 0,
 	VerticalGap = 0,
-	Depth = 0.020,
+	-- The ribbons are drawn on the rack's front face, so keep it paper-thin to sit on the vest.
+	Depth = 0.004,
 
 	-- SurfaceGui resolution for each ribbon.
 	PixelWidth = 240,
@@ -29,17 +30,17 @@ RibbonRackConfig.Mount = {
 	-- "Top": the mount point is the TOP-CENTER and new rows stack downward.
 	AnchorEdge = "Bottom",
 
-	-- Add an Attachment with this name to a vest if you want a custom fit.
-	-- Its WorldCFrame is treated as the rack's AnchorEdge center.
+	-- Every morph in ServerStorage.Morphs has an Attachment with this name in its
+	-- Chest1.Middle part, placed per morph (measured against that morph's vest). Its
+	-- WorldCFrame is the rack's AnchorEdge center, at the rack's mid-depth: the rack's
+	-- back face rests 0.002 studs in front of the vest. Each one stores the measured
+	-- vest surface in its VestSurfaceZ attribute. Move the attachment in Studio to
+	-- adjust a morph; add one to any new morph.
 	AttachmentName = "USARF_MedalMount",
 	AttachmentAdjustment = CFrame.new(),
 
-	-- Rack anchor point relative to UpperTorso. Measured against the 108th/MP
-	-- "condor" vest: the flat plate area beside the name tape, between the tape's
-	-- edge (x 0.19) and the plate's edge (x ~0.54), from the tape's bottom
-	-- (y 0.30) up to ~0.55, resting on the plate surface (z -0.61 to -0.62).
-	-- The bottom row lines up with the bottom of the name tape; six rows
-	-- (all 17 ribbons) fit before reaching the plate's top corner.
+	-- Fallback when the character has no USARF_MedalMount (e.g. no uniform), relative
+	-- to UpperTorso.
 	UpperTorsoOffset = CFrame.new(0.360, 0.305, -0.630),
 }
 
