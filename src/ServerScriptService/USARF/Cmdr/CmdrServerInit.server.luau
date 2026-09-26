@@ -8,6 +8,12 @@ local ConfigFolder = USARFServer:WaitForChild("Config")
 
 local CmdrAdminConfig = require(ConfigFolder:WaitForChild("CmdrAdminConfig"))
 
+-- Register the permission hook first so it is always active, even if anything below errors.
+Cmdr.Registry:RegisterHook(
+	"BeforeRun",
+	require(CmdrFolder:WaitForChild("Hooks"):WaitForChild("BeforeRun"))
+)
+
 -- Default Cmdr commands disabled.
 -- Cmdr:RegisterDefaultCommands()
 
@@ -47,10 +53,5 @@ local function applyCommandGroups()
 end
 
 applyCommandGroups()
-
-Cmdr.Registry:RegisterHook(
-	"BeforeRun",
-	require(CmdrFolder:WaitForChild("Hooks"):WaitForChild("BeforeRun"))
-)
 
 print("[USARF Cmdr] Initialized with USARF-only commands")
