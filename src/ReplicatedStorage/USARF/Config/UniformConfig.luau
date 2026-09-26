@@ -12,13 +12,8 @@ UniformConfig.RemoveAvatarAccessories = true
 
 UniformConfig.KeepAccessoryTypes = {}
 
--- Patches and rank tabs are placed on the wearer's actual body-part surface
--- (measured when attached), so they sit flush on any avatar's arms. Offset
--- still sets where along the arm they go; its outward part and DepthOffset are
--- only used when this is false.
 UniformConfig.SnapInsigniaToSurface = true
 
--- Gap between the arm surface and the back of a patch / rank tab, in studs.
 UniformConfig.InsigniaSurfaceGap = 0.004
 
 UniformConfig.Textures = {
@@ -63,12 +58,6 @@ UniformConfig.Textures = {
 	},
 }
 
--- Where the visible patch / rank tab sits inside each image, in pixels:
--- { x, y, width, height }. Most images have transparent space around the
--- insignia (the patches are 682x1023 canvases), so each one is cropped to this
--- and keeps its real proportions, fitted inside its SurfaceWidth x SurfaceHeight.
--- Measured from the images; if you change a texture, update or add its entry
--- (an image without an entry is shown whole, stretched to the surface).
 UniformConfig.ImageRects = {
 	-- Patches
 	[96296737263493] = { 59, 29, 904, 732 }, -- USARF
@@ -393,7 +382,7 @@ UniformConfig.Teams = {
 	}),
 
 	["Secret Service"] = applyRankTabSettings({
-		Folder = "MP",
+		Folder = "USSS",
 		GroupId = 6033945,
 		Fallback = "AIT",
 
