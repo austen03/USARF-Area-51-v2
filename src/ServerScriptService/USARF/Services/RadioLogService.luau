@@ -7,7 +7,10 @@ local STORE_NAME = "USARF_RadioLogs_v1"
 local MAX_GLOBAL_LOGS = 300
 local MAX_PLAYER_LOGS = 100
 
+local BatchedLogWriter = require(script.Parent:WaitForChild("BatchedLogWriter"))
+
 local store = DataStoreService:GetDataStore(STORE_NAME)
+local writer = BatchedLogWriter.new(store, "RadioLogService")
 local memoryLogs = {}
 local started = false
 
@@ -21,21 +24,6 @@ end
 
 local function now()
 	return os.time()
-end
-
-local function pushToList(key, entry, maxCount)
-	pcall(function()
-		store:UpdateAsync(key, function(old)
-			old = type(old) == "table" and old or {}
-			table.insert(old, 1, entry)
-
-			while #old > maxCount do
-				table.remove(old)
-			end
-
-			return old
-		end)
-	end)
 end
 
 function RadioLogService.Log(player, data)
@@ -93,10 +81,8 @@ function RadioLogService.Log(player, data)
 		table.remove(memoryLogs)
 	end
 
-	task.spawn(function()
-		pushToList(getGlobalKey(), entry, MAX_GLOBAL_LOGS)
-		pushToList(getPlayerKey(player.UserId), entry, MAX_PLAYER_LOGS)
-	end)
+	writer:Add(getGlobalKey(), entry, MAX_GLOBAL_LOGS)
+	writer:Add(getPlayerKey(player.UserId), entry, MAX_PLAYER_LOGS)
 
 	return entry
 end
@@ -108,7 +94,16 @@ function RadioLogService.GetRecent(count)
 		return store:GetAsync(getGlobalKey())
 	end)
 
-	local logs = success and type(result) == "table" and result or memoryLogs
+	local logs = memoryLogs
+
+	if success and type(result) == "table" then
+		-- Entries still waiting to be saved are newer than anything in the store.
+		logs = writer:GetPending(getGlobalKey())
+
+		for _, entry in ipairs(result) do
+			table.insert(logs, entry)
+		end
+	end
 	local output = {}
 
 	for index = 1, math.min(count, #logs) do

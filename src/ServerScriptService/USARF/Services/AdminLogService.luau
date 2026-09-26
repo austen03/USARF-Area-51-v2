@@ -8,7 +8,10 @@ local AdminLogService = {}
 local STORE_NAME = "USARF_AdminLogs_v1"
 local MAX_GLOBAL_LOGS = 300
 
+local BatchedLogWriter = require(script.Parent:WaitForChild("BatchedLogWriter"))
+
 local store = DataStoreService:GetDataStore(STORE_NAME)
+local writer = BatchedLogWriter.new(store, "AdminLogService")
 local memoryLogs = {}
 local started = false
 
@@ -18,21 +21,6 @@ end
 
 local function now()
 	return os.time()
-end
-
-local function push(entry)
-	pcall(function()
-		store:UpdateAsync(getGlobalKey(), function(old)
-			old = type(old) == "table" and old or {}
-			table.insert(old, 1, entry)
-
-			while #old > MAX_GLOBAL_LOGS do
-				table.remove(old)
-			end
-
-			return old
-		end)
-	end)
 end
 
 function AdminLogService.Log(data)
@@ -62,9 +50,7 @@ function AdminLogService.Log(data)
 		table.remove(memoryLogs)
 	end
 
-	task.spawn(function()
-		push(entry)
-	end)
+	writer:Add(getGlobalKey(), entry, MAX_GLOBAL_LOGS)
 
 	return entry
 end
@@ -76,7 +62,16 @@ function AdminLogService.GetRecent(count)
 		return store:GetAsync(getGlobalKey())
 	end)
 
-	local logs = success and type(result) == "table" and result or memoryLogs
+	local logs = memoryLogs
+
+	if success and type(result) == "table" then
+		-- Entries still waiting to be saved are newer than anything in the store.
+		logs = writer:GetPending(getGlobalKey())
+
+		for _, entry in ipairs(result) do
+			table.insert(logs, entry)
+		end
+	end
 	local output = {}
 
 	for index = 1, math.min(count, #logs) do

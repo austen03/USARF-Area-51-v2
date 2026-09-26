@@ -384,10 +384,11 @@ UniformConfig.Teams = {
 	["Secret Service"] = applyRankTabSettings({
 		Folder = "USSS",
 		GroupId = 6033945,
-		Fallback = "AIT",
+		-- Must match the morph folder name exactly (ServerStorage.Morphs.USSS.AiT).
+		Fallback = "AiT",
 
 		RankMap = {
-			[1] = "AIT",
+			[1] = "AiT",
 			[2] = "Agent",
 			[3] = "CAT",
 			[4] = "Special Agent",
