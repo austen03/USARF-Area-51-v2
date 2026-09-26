@@ -291,7 +291,7 @@ USARFConfig.Teams = {
 
 	SpecOpsAIG = {
 		displayName = "1st Spec. Ops. A.I.G",
-		teamName = "1st Spec. Ops. A.I.G",
+		teamName = "1st Spec. Ops. A . I . G",
 		category = "combative",
 		spawnKey = "SpecOpsAIG",
 		trackActivity = true,
@@ -683,7 +683,7 @@ USARFConfig.Economy = {
 		Refund = "REFUND",
 		System = "SYSTEM",
 	},
-	
+
 	ShopCategories = {
 		CashItems = "Cash Items",
 		GoldItems = "Gold Items",
