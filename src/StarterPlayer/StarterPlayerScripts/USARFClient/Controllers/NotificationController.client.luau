@@ -1,3 +1,4 @@
+local GuiService = game:GetService("GuiService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -9,8 +10,7 @@ local USARF = ReplicatedStorage:WaitForChild("USARF")
 local Remotes = USARF:WaitForChild("Remotes")
 local NotifyRemote = Remotes:WaitForChild("Notify")
 
-local DEFAULT_BOTTOM_PADDING = 24
-local RIGHT_PADDING = 24
+local LEFT_PADDING = 24
 local UI_GAP = 12
 
 local CONTAINER_SIZE = UDim2.new(0, 320, 0, 260)
@@ -25,8 +25,8 @@ screenGui.Parent = playerGui
 
 local container = Instance.new("Frame")
 container.Name = "Container"
-container.AnchorPoint = Vector2.new(1, 1)
-container.Position = UDim2.new(1, -RIGHT_PADDING, 1, -DEFAULT_BOTTOM_PADDING)
+container.AnchorPoint = Vector2.new(0, 0)
+container.Position = UDim2.new(0, LEFT_PADDING, 0, 90)
 container.Size = CONTAINER_SIZE
 container.BackgroundTransparency = 1
 container.Parent = screenGui
@@ -35,8 +35,8 @@ local layout = Instance.new("UIListLayout")
 layout.FillDirection = Enum.FillDirection.Vertical
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 8)
-layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 layout.Parent = container
 
 local typeStyles = {
@@ -56,70 +56,36 @@ local function getStyle(notificationType)
 	return typeStyles[notificationType] or typeStyles.Info
 end
 
-local function getRadioPanel()
-	local usarfgui = playerGui:FindFirstChild("USARFGui")
-	local popups = usarfgui and usarfgui:FindFirstChild("Popups")
-	local radioPanel = popups and popups:FindFirstChild("RadioPanel")
+-- The health panel (HealthController) sits top-left under Roblox's top bar.
+local function getVisibleHealthPanel()
+	local healthGui = playerGui:FindFirstChild("USARF_HealthUI")
+	local healthRoot = healthGui and healthGui.Enabled and healthGui:FindFirstChild("HealthRoot")
 
-	if radioPanel and radioPanel.Visible then
-		return radioPanel
+	if healthRoot and healthRoot.Visible then
+		return healthRoot
 	end
 
 	return nil
 end
 
-local function getBottomOffsetAbove(guiObject)
-	if not guiObject then
-		return DEFAULT_BOTTOM_PADDING
-	end
-
-	local camera = workspace.CurrentCamera
-	local viewportHeight = camera and camera.ViewportSize.Y or 720
-
-	local topY = guiObject.AbsolutePosition.Y
-	return math.max(DEFAULT_BOTTOM_PADDING, viewportHeight - topY + UI_GAP)
-end
-
--- Top of the notification stack when it sits in the top-right: just below the custom
--- leaderboard's visible rows, so it moves down as more players join.
-local function getTopBelowLeaderboard()
-	local leaderboardGui = playerGui:FindFirstChild("USARFLeaderboard")
-	local board = leaderboardGui and leaderboardGui.Enabled and leaderboardGui:FindFirstChild("MainFrame")
-
-	if board and board.Visible then
-		local rows = board:FindFirstChild("ScrollFrame")
-		local visibleHeight = board.AbsoluteSize.Y
-
-		if rows and rows:IsA("ScrollingFrame") then
-			visibleHeight = math.min(rows.AbsoluteCanvasSize.Y, board.AbsoluteSize.Y)
-		end
-
-		return board.AbsolutePosition.Y + visibleHeight + UI_GAP
-	end
-
-	return 110
-end
-
+-- Notifications stack in the top-left, directly below the health panel (or below the top bar
+-- when it is hidden), so they never cover the radio / Protection System in the bottom-right.
 local function applyNotificationLayout()
-	if player:GetAttribute("USARF_ProtectionSystemOpen") == true then
-		container.AnchorPoint = Vector2.new(1, 0)
-		container.Position = UDim2.new(1, -RIGHT_PADDING, 0, getTopBelowLeaderboard())
-		container.Size = CONTAINER_SIZE
+	local healthPanel = getVisibleHealthPanel()
+	local left = LEFT_PADDING
+	local top = GuiService:GetGuiInset().Y + UI_GAP
 
-		layout.VerticalAlignment = Enum.VerticalAlignment.Top
-		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		return
+	if healthPanel then
+		left = healthPanel.AbsolutePosition.X
+		top = healthPanel.AbsolutePosition.Y + healthPanel.AbsoluteSize.Y + UI_GAP
 	end
 
-	local radioPanel = getRadioPanel()
-	local bottomOffset = radioPanel and getBottomOffsetAbove(radioPanel) or DEFAULT_BOTTOM_PADDING
-
-	container.AnchorPoint = Vector2.new(1, 1)
-	container.Position = UDim2.new(1, -RIGHT_PADDING, 1, -bottomOffset)
+	container.AnchorPoint = Vector2.new(0, 0)
+	container.Position = UDim2.new(0, left, 0, top)
 	container.Size = CONTAINER_SIZE
 
-	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 end
 
 local function createNotification(data)
@@ -241,11 +207,6 @@ _G.USARFNotify = showNotification
 
 NotifyRemote.OnClientEvent:Connect(function(data)
 	createNotification(data or {})
-end)
-
-player:GetAttributeChangedSignal("USARF_ProtectionSystemOpen"):Connect(function()
-	task.wait(0.05)
-	applyNotificationLayout()
 end)
 
 task.spawn(function()
