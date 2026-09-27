@@ -1,9 +1,6 @@
--- USARF Clans configuration (shared by the server ClanService and the client ClanController).
-
 local ClanConfig = {}
 
 -- Creating a clan requires this gamepass. Any player can join a clan.
--- 0 = not set up yet: creating is disabled until you put the real gamepass ID here.
 ClanConfig.CreateGamepassId = 1999749146
 
 ClanConfig.MaxMembers = 25
@@ -49,10 +46,6 @@ ClanConfig.Permissions = {
 	Disband = "Leader",
 }
 
--- Logo choices. Image must be an IMAGE asset ID, not a Decal ID: a decal is a wrapper
--- around an image and won't display in UI. In Studio, insert the decal and copy the ID from
--- its Texture property (rbxassetid://<imageId>). A logo with rbxassetid://0 shows its name
--- as a placeholder in the menu and no icon on name tags.
 ClanConfig.Logos = {
 	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://81619610446507" },
 	{ Id = "Warning", Name = "Warning", Image = "rbxassetid://120772833059655" },
@@ -75,7 +68,6 @@ ClanConfig.Logos = {
 	{ Id = "Scarred Eye", Name = "Scarred Eye", Image = "rbxassetid://84682138029345" },
 }
 
--- Logo colors players can pick from.
 ClanConfig.LogoColors = {
 	{ Id = "White", Color = Color3.fromRGB(235, 235, 235) },
 	{ Id = "Red", Color = Color3.fromRGB(225, 60, 60) },
@@ -91,7 +83,6 @@ ClanConfig.LogoColors = {
 	{ Id = "Black", Color = Color3.fromRGB(30, 30, 34) },
 }
 
--- Name tags show the clan logo and [TAG] only while the player is on this team.
 ClanConfig.NameTagTeamKey = "TestSubject"
 
 function ClanConfig.GetRankIndex(rankName: string?): number
@@ -124,7 +115,6 @@ function ClanConfig.GetColor(colorId: string?)
 	return nil
 end
 
--- True if rankName meets the minimum rank for a ClanConfig.Permissions entry.
 function ClanConfig.HasPermission(rankName: string?, permission: string): boolean
 	local required = ClanConfig.Permissions[permission]
 
