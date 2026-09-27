@@ -4,7 +4,7 @@ local ClanConfig = {}
 
 -- Creating a clan requires this gamepass. Any player can join a clan.
 -- 0 = not set up yet: creating is disabled until you put the real gamepass ID here.
-ClanConfig.CreateGamepassId = 0
+ClanConfig.CreateGamepassId = 1999749146
 
 ClanConfig.MaxMembers = 25
 
@@ -30,10 +30,10 @@ ClanConfig.Description = {
 }
 
 -- Exact tags that can't be used.
-ClanConfig.BlacklistedTags = { "" }
+ClanConfig.BlacklistedTags = { "USARF", "USA", "MOD", "ADMIN", "STAFF", "RBLX", "RBX", "ROBLOX" }
 
 -- Names and tags can't start with or contain any of these (case-insensitive).
-ClanConfig.BlacklistedNames = { "MOD", "ADMIN", "STAFF", "RBLX", "RBX", "ROBLOX" }
+ClanConfig.BlacklistedNames = { "USARF", "USA", "MOD", "ADMIN", "STAFF", "RBLX", "RBX", "ROBLOX" }
 
 -- Lowest to highest. Leader is only gained through Create or Transfer Leadership.
 ClanConfig.Ranks = { "Member", "Veteran", "Specialist", "Officer", "Co-Leader", "Leader" }
@@ -52,16 +52,25 @@ ClanConfig.Permissions = {
 -- Logo choices. Put your image asset IDs in Image; a logo with rbxassetid://0 shows its
 -- name as a placeholder in the menu and no icon on name tags.
 ClanConfig.Logos = {
-	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://0" },
-	{ Id = "Crossed", Name = "Crossed Arms", Image = "rbxassetid://0" },
-	{ Id = "Shield", Name = "Shield", Image = "rbxassetid://0" },
-	{ Id = "Star", Name = "Star", Image = "rbxassetid://0" },
-	{ Id = "Wolf", Name = "Wolf", Image = "rbxassetid://0" },
-	{ Id = "Eagle", Name = "Eagle", Image = "rbxassetid://0" },
-	{ Id = "Crown", Name = "Crown", Image = "rbxassetid://0" },
-	{ Id = "Flame", Name = "Flame", Image = "rbxassetid://0" },
-	{ Id = "Bolt", Name = "Lightning", Image = "rbxassetid://0" },
-	{ Id = "Biohazard", Name = "Biohazard", Image = "rbxassetid://0" },
+	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://80216527090034" },
+	{ Id = "Warning", Name = "Warning", Image = "rbxassetid://102136528195329" },
+	{ Id = "Radiation", Name = "Radiation", Image = "rbxassetid://115183350472165" },
+	{ Id = "Gas Mask", Name = "Gas Mask", Image = "rbxassetid://111798211260520" },
+	{ Id = "Flask", Name = "Flask", Image = "rbxassetid://80753298032468" },
+	{ Id = "Syringe", Name = "Syringe", Image = "rbxassetid://113001959986943" },
+	{ Id = "Crosshair", Name = "Crosshair", Image = "rbxassetid://139636929038054" },
+	{ Id = "Watchful Eye", Name = "Watchful Eye", Image = "rbxassetid://128312739582487" },
+	{ Id = "Cell Bars", Name = "Cell Bars", Image = "rbxassetid://100798766022243" },
+	{ Id = "Crown", Name = "Crown", Image = "rbxassetid://93151175489933" },
+	{ Id = "Failed Test", Name = "Failed Test", Image = "rbxassetid://99792597791812" },
+	{ Id = "Lightning", Name = "Lightning", Image = "rbxassetid://78663557506757" },
+	{ Id = "Tally Marks", Name = "Tally Marks", Image = "rbxassetid://130976151585201" },
+	{ Id = "Crossed Knives", Name = "Crossed Knives", Image = "rbxassetid://82222168657003" },
+	{ Id = "Claw Marks", Name = "Claw Marks", Image = "rbxassetid://92495244669216" },
+	{ Id = "Crowbar", Name = "Crowbar", Image = "rbxassetid://76376055534695" },
+	{ Id = "Handprint", Name = "Handprint", Image = "rbxassetid://111789201294421" },
+	{ Id = "Raised Fist", Name = "Raised Fist", Image = "rbxassetid://136770904384479" },
+	{ Id = "Scarred Eye", Name = "Scarred Eye", Image = "rbxassetid://74181839237293" },
 }
 
 -- Logo colors players can pick from.
