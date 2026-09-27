@@ -1018,6 +1018,52 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
+	-- Clan moderation (Cmdr/ClanCommands).
+	clandelete = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
+	clanrename = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
+	clanretag = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
+	clanremove = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
+	claninfo = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = false,
+		CaseId = false,
+	},
+
 
 }
 

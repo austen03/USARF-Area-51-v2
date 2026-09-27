@@ -390,6 +390,34 @@ local function isTestSubject(player)
 	return getTeamName(player) == "Test Subject" or player:GetAttribute("USARF_TeamKey") == "TestSubject"
 end
 
+-- Clan tag and logo (attributes set by ClanService) only show on the Test Subject name tag.
+local function getClanPrefix(player)
+	local tag = player:GetAttribute("USARF_ClanTag")
+
+	if isTestSubject(player) and typeof(tag) == "string" and tag ~= "" then
+		return "[" .. tag .. "] "
+	end
+
+	return ""
+end
+
+local function getClanIcon(player)
+	local image = player:GetAttribute("USARF_ClanLogo")
+
+	if not isTestSubject(player) or typeof(image) ~= "string" or image == "" or image == "rbxassetid://0" then
+		return nil
+	end
+
+	local color = player:GetAttribute("USARF_ClanColor")
+
+	return {
+		name = "Clan",
+		image = image,
+		color = typeof(color) == "Color3" and color or Color3.new(1, 1, 1),
+		size = 30,
+	}
+end
+
 local function isPMC(player)
 	return getTeamName(player) == "PMC" or player:GetAttribute("USARF_TeamKey") == "PMC"
 end
@@ -799,6 +827,7 @@ local function buildSpecialDisplay(player, goldMode)
 	if isTestSubject(player) then
 		local status = player:GetAttribute("USARF_ContainmentStatus")
 		local subjectNumber = getTestSubjectNumber(player)
+		local clanPrefix = getClanPrefix(player)
 
 		if status == "TERMINATE" then
 			return {
@@ -806,7 +835,7 @@ local function buildSpecialDisplay(player, goldMode)
 				lines = {
 					{ name = "StatusLabel", text = "[TERMINATE]", height = 22, color = Color3.fromRGB(255, 45, 45), order = 2 },
 					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(255, 55, 55), order = 3 },
-					{ name = "UsernameLabel", text = player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{ name = "UsernameLabel", text = clanPrefix .. player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
 				},
 			}
 		elseif status == "AUTHORIZED" then
@@ -815,7 +844,7 @@ local function buildSpecialDisplay(player, goldMode)
 				lines = {
 					{ name = "StatusLabel", text = "[AUTHORIZED]", height = 22, color = Color3.fromRGB(90, 255, 115), order = 2 },
 					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(90, 255, 115), order = 3 },
-					{ name = "UsernameLabel", text = player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{ name = "UsernameLabel", text = clanPrefix .. player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
 				},
 			}
 		end
@@ -824,7 +853,7 @@ local function buildSpecialDisplay(player, goldMode)
 			mode = "TestSubject",
 			lines = {
 				{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = goldMode and GOLD_COLOR or Color3.fromRGB(220, 220, 60), order = 2 },
-				{ name = "UsernameLabel", text = goldMode and ("★ " .. player.Name .. " ★") or player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 3 },
+				{ name = "UsernameLabel", text = clanPrefix .. (goldMode and ("★ " .. player.Name .. " ★") or player.Name), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 3 },
 			},
 		}
 	end
@@ -874,6 +903,11 @@ function NameTagService.Apply(player)
 
 	local goldMode = playerOwnsGoldNametag(player)
 	local icons = getIcons(player)
+
+	local clanIcon = getClanIcon(player)
+	if clanIcon then
+		table.insert(icons, 1, clanIcon)
+	end
 
 	local isAFK = player:GetAttribute("USARF_AFK") == true
 	local isSuspiciousIdle = player:GetAttribute("USARF_SuspiciousIdle") == true
