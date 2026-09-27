@@ -907,7 +907,6 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
-
 	globalannounce = {
 		MainServerLevel = "Administrator",
 		DisplayGroup = "Administrator",
@@ -943,7 +942,6 @@ CmdrAdminConfig.Commands = {
 		Log = true,
 		CaseId = false,
 	},
-
 
 	eventserver = {
 		MainServerLevel = "Administrator",
@@ -981,7 +979,6 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
-
 	teamkill = {
 		MainServerLevel = "Administrator",
 		DisplayGroup = "Administrator",
@@ -1018,7 +1015,6 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
-	-- Clan moderation (Cmdr/ClanCommands).
 	clandelete = {
 		MainServerLevel = "Moderator",
 		DisplayGroup = "Moderator",
@@ -1063,8 +1059,6 @@ CmdrAdminConfig.Commands = {
 		Log = false,
 		CaseId = false,
 	},
-
-
 }
 
 return CmdrAdminConfig
