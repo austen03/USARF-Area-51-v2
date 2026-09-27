@@ -593,6 +593,15 @@ local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColo
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})
+	-- Room for the selection ring, which is drawn outside the cell and would otherwise be
+	-- clipped against the scrolling list's edge.
+	create("UIPadding", {
+		PaddingLeft = UDim.new(0, 6),
+		PaddingRight = UDim.new(0, 6),
+		PaddingTop = UDim.new(0, 4),
+		PaddingBottom = UDim.new(0, 4),
+		Parent = grid,
+	})
 
 	for index, item in ipairs(items) do
 		local isSelected = item.Id == selectedId
