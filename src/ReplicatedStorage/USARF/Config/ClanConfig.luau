@@ -49,8 +49,10 @@ ClanConfig.Permissions = {
 	Disband = "Leader",
 }
 
--- Logo choices. Put your image asset IDs in Image; a logo with rbxassetid://0 shows its
--- name as a placeholder in the menu and no icon on name tags.
+-- Logo choices. Image must be an IMAGE asset ID, not a Decal ID: a decal is a wrapper
+-- around an image and won't display in UI. In Studio, insert the decal and copy the ID from
+-- its Texture property (rbxassetid://<imageId>). A logo with rbxassetid://0 shows its name
+-- as a placeholder in the menu and no icon on name tags.
 ClanConfig.Logos = {
 	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://81619610446507" },
 	{ Id = "Warning", Name = "Warning", Image = "rbxassetid://120772833059655" },
