@@ -49,28 +49,30 @@ ClanConfig.Permissions = {
 	Disband = "Leader",
 }
 
--- Logo choices. Put your image asset IDs in Image; a logo with rbxassetid://0 shows its
--- name as a placeholder in the menu and no icon on name tags.
+-- Logo choices. Image must be an IMAGE asset ID, not a Decal ID: a decal is a wrapper
+-- around an image and won't display in UI. In Studio, insert the decal and copy the ID from
+-- its Texture property (rbxassetid://<imageId>). A logo with rbxassetid://0 shows its name
+-- as a placeholder in the menu and no icon on name tags.
 ClanConfig.Logos = {
-	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://80216527090034" },
-	{ Id = "Warning", Name = "Warning", Image = "rbxassetid://102136528195329" },
-	{ Id = "Radiation", Name = "Radiation", Image = "rbxassetid://115183350472165" },
-	{ Id = "Gas Mask", Name = "Gas Mask", Image = "rbxassetid://111798211260520" },
-	{ Id = "Flask", Name = "Flask", Image = "rbxassetid://80753298032468" },
-	{ Id = "Syringe", Name = "Syringe", Image = "rbxassetid://113001959986943" },
-	{ Id = "Crosshair", Name = "Crosshair", Image = "rbxassetid://139636929038054" },
-	{ Id = "Watchful Eye", Name = "Watchful Eye", Image = "rbxassetid://128312739582487" },
-	{ Id = "Cell Bars", Name = "Cell Bars", Image = "rbxassetid://100798766022243" },
-	{ Id = "Crown", Name = "Crown", Image = "rbxassetid://93151175489933" },
-	{ Id = "Failed Test", Name = "Failed Test", Image = "rbxassetid://99792597791812" },
-	{ Id = "Lightning", Name = "Lightning", Image = "rbxassetid://78663557506757" },
-	{ Id = "Tally Marks", Name = "Tally Marks", Image = "rbxassetid://130976151585201" },
-	{ Id = "Crossed Knives", Name = "Crossed Knives", Image = "rbxassetid://82222168657003" },
-	{ Id = "Claw Marks", Name = "Claw Marks", Image = "rbxassetid://92495244669216" },
-	{ Id = "Crowbar", Name = "Crowbar", Image = "rbxassetid://76376055534695" },
-	{ Id = "Handprint", Name = "Handprint", Image = "rbxassetid://111789201294421" },
-	{ Id = "Raised Fist", Name = "Raised Fist", Image = "rbxassetid://136770904384479" },
-	{ Id = "Scarred Eye", Name = "Scarred Eye", Image = "rbxassetid://74181839237293" },
+	{ Id = "Skull", Name = "Skull", Image = "rbxassetid://81619610446507" },
+	{ Id = "Warning", Name = "Warning", Image = "rbxassetid://120772833059655" },
+	{ Id = "Radiation", Name = "Radiation", Image = "rbxassetid://94594911587456" },
+	{ Id = "Gas Mask", Name = "Gas Mask", Image = "rbxassetid://95012490738164" },
+	{ Id = "Flask", Name = "Flask", Image = "rbxassetid://89745401015778" },
+	{ Id = "Syringe", Name = "Syringe", Image = "rbxassetid://107064479577467" },
+	{ Id = "Crosshair", Name = "Crosshair", Image = "rbxassetid://116480001406592" },
+	{ Id = "Watchful Eye", Name = "Watchful Eye", Image = "rbxassetid://138562409695570" },
+	{ Id = "Cell Bars", Name = "Cell Bars", Image = "rbxassetid://118876623089477" },
+	{ Id = "Crown", Name = "Crown", Image = "rbxassetid://111537920420363" },
+	{ Id = "Failed Test", Name = "Failed Test", Image = "rbxassetid://90144724893194" },
+	{ Id = "Lightning", Name = "Lightning", Image = "rbxassetid://87664634084286" },
+	{ Id = "Tally Marks", Name = "Tally Marks", Image = "rbxassetid://133960714876708" },
+	{ Id = "Crossed Knives", Name = "Crossed Knives", Image = "rbxassetid://83161396526682" },
+	{ Id = "Claw Marks", Name = "Claw Marks", Image = "rbxassetid://129504150948232" },
+	{ Id = "Crowbar", Name = "Crowbar", Image = "rbxassetid://82870956657911" },
+	{ Id = "Handprint", Name = "Handprint", Image = "rbxassetid://91336733287924" },
+	{ Id = "Raised Fist", Name = "Raised Fist", Image = "rbxassetid://78985279345339" },
+	{ Id = "Scarred Eye", Name = "Scarred Eye", Image = "rbxassetid://84682138029345" },
 }
 
 -- Logo colors players can pick from.

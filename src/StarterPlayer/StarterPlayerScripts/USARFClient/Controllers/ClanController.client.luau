@@ -47,7 +47,7 @@ local refreshQueued = false
 local createForm = { Name = "", Tag = "", Description = "" }
 local createLogoId = ClanConfig.Logos[1] and ClanConfig.Logos[1].Id
 local createColorId = ClanConfig.LogoColors[1] and ClanConfig.LogoColors[1].Id
-local editLogoId, editColorId = nil, nil
+local editLogoId, editColorId, editDescription = nil, nil, nil
 
 --// Small UI helpers
 
@@ -578,7 +578,8 @@ local function renderLog()
 end
 
 -- Grid of selectable logo or color swatches.
-local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColor)
+-- tintColorId previews the logo choices in the currently picked color.
+local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColor, tintColorId)
 	local grid = create("Frame", {
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
@@ -594,9 +595,10 @@ local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColo
 	})
 
 	for index, item in ipairs(items) do
+		local isSelected = item.Id == selectedId
 		local cell = create("TextButton", {
 			AutoButtonColor = true,
-			BackgroundColor3 = isColor and item.Color or COLORS.Row,
+			BackgroundColor3 = isColor and item.Color or (isSelected and COLORS.RowSelected or COLORS.Row),
 			BorderSizePixel = 0,
 			Text = "",
 			LayoutOrder = index,
@@ -604,12 +606,28 @@ local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColo
 		})
 		corner(cell, isColor and 14 or 8)
 
-		if item.Id == selectedId then
-			create("UIStroke", { Color = COLORS.Accent, Thickness = 2, Parent = cell })
+		if isSelected then
+			-- Border mode: on a TextButton a UIStroke otherwise outlines the (empty) text only.
+			create("UIStroke", {
+				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+				Color = Color3.fromRGB(255, 255, 255),
+				Thickness = isColor and 3 or 2,
+				Parent = cell,
+			})
+
+			if isColor then
+				local r, g, b = item.Color.R, item.Color.G, item.Color.B
+				local isLight = (0.299 * r + 0.587 * g + 0.114 * b) > 0.6
+
+				cell.Text = "✓"
+				cell.Font = Enum.Font.GothamBlack
+				cell.TextSize = 16
+				cell.TextColor3 = isLight and Color3.fromRGB(20, 20, 24) or Color3.fromRGB(255, 255, 255)
+			end
 		end
 
 		if not isColor then
-			logoView(cell, item.Id, nil, 36, { Position = UDim2.fromOffset(5, 5) })
+			logoView(cell, item.Id, tintColorId, 36, { Position = UDim2.fromOffset(5, 5) })
 		end
 
 		cell.MouseButton1Click:Connect(function()
@@ -638,7 +656,7 @@ local function renderSettings()
 		pickerGrid(myClanBody, nextOrder(), ClanConfig.Logos, editLogoId, function(id)
 			editLogoId = id
 			renderMyClan()
-		end, false)
+		end, false, editColorId)
 
 		label(myClanBody, "LOGO COLOR", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
 		pickerGrid(myClanBody, nextOrder(), ClanConfig.LogoColors, editColorId, function(id)
@@ -653,8 +671,12 @@ local function renderSettings()
 			MultiLine = true,
 			TextWrapped = true,
 			TextYAlignment = Enum.TextYAlignment.Top,
-			Text = clan.Description or "",
+			Text = editDescription or clan.Description or "",
 		})
+		-- Keep an unsaved description when picking a logo/color re-renders the tab.
+		description:GetPropertyChangedSignal("Text"):Connect(function()
+			editDescription = description.Text
+		end)
 
 		button(myClanBody, "SAVE CHANGES", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = COLORS.Accent }, function()
 			act("EditAppearance", { LogoId = editLogoId, ColorId = editColorId, Description = description.Text })
@@ -826,7 +848,7 @@ local function renderCreate()
 	pickerGrid(createBody, nextOrder(), ClanConfig.Logos, createLogoId, function(id)
 		createLogoId = id
 		renderCreate()
-	end, false)
+	end, false, createColorId)
 
 	label(createBody, "LOGO COLOR", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
 	pickerGrid(createBody, nextOrder(), ClanConfig.LogoColors, createColorId, function(id)
@@ -892,7 +914,7 @@ function renderAll(reloadState)
 		end
 	end
 
-	editLogoId, editColorId = nil, nil
+	editLogoId, editColorId, editDescription = nil, nil, nil
 	updateTabs()
 
 	if currentTab == "Browse" then
