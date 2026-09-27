@@ -20,6 +20,7 @@ Cmdr.Registry:RegisterHook(
 -- Cmdr 1.13: call methods on Cmdr.Registry directly (Cmdr:Method() still works but prints a deprecation warning).
 Cmdr.Registry:RegisterTypesIn(CmdrFolder:WaitForChild("Types"))
 Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("Commands"))
+Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("ClanCommands"))
 
 local function normalizeCommandName(name)
 	return string.lower(tostring(name or ""))

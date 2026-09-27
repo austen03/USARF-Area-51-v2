@@ -85,19 +85,26 @@ local radioIcon = Icon.new()
 	:setOrder(3)
 	:autoDeselect(false)
 
+local clansIcon = Icon.new()
+	:setName("USARF_Clans")
+	:setLabel("Clans")
+	:setCaption("Clans")
+	:setOrder(4)
+	:autoDeselect(false)
+
 local cmdrIcon = Icon.new()
 	:setName("USARF_Cmdr")
 	:setImage(CMDR_ICON_IMAGE)
 	:setLabel("Cmdr")
 	:setCaption("Open Cmdr")
-	:setOrder(4)
+	:setOrder(5)
 	:autoDeselect(false)
 
 local devModeIcon = Icon.new()
 	:setName("USARF_DevMode")
 	:setLabel("DEV")
 	:setCaption("Toggle Developer Diagnostics")
-	:setOrder(5)
+	:setOrder(6)
 	:autoDeselect(false)
 
 local menuIcon = Icon.new()
@@ -128,6 +135,8 @@ local function updateTopbarVisibility()
 		not hidden
 			and Player:GetAttribute("USARF_RadioHidden") ~= true
 	)
+
+	clansIcon:setEnabled(not hidden)
 
 	cmdrIcon:setEnabled(
 		not hidden
@@ -190,6 +199,11 @@ end)
 radioIcon.selected:Connect(function()
 	safeCall("USARFToggleRadio")
 	radioIcon:deselect()
+end)
+
+clansIcon.selected:Connect(function()
+	safeCall("USARFToggleClans")
+	clansIcon:deselect()
 end)
 
 cmdrIcon.selected:Connect(function()
