@@ -772,6 +772,11 @@ local function createPlayerRow(playerEntry, order)
 			local rawIconSize = tonumber(iconData.size) or ICON_SIZE
 			local finalIconSize = math.clamp(rawIconSize, 14, ICON_SIZE)
 
+			-- rowSize lets a single icon (e.g. the covert icon) be larger, up to the row height.
+			if tonumber(iconData.rowSize) then
+				finalIconSize = math.clamp(tonumber(iconData.rowSize), 14, ROW_HEIGHT - 2)
+			end
+
 			local icon = Instance.new("ImageLabel")
 			icon.Name = tostring(iconData.name or "Badge") .. "_Icon"
 			icon.BackgroundTransparency = 1

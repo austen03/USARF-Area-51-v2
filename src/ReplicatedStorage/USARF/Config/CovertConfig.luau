@@ -29,11 +29,13 @@ CovertConfig.Tools = {
 	"Glock 18c",
 }
 
--- Leaderboard icon moderators see on covert players. TODO: set the image asset id.
+-- Leaderboard icon moderators see on covert players. Upload it white on a
+-- transparent background: Color tints the image, and a black image stays black.
+-- Size is in pixels, up to 24 (the row is 26 tall). TODO: set the image asset id.
 CovertConfig.ModeratorIcon = {
 	Image = "rbxassetid://0",
 	Color = Color3.fromRGB(255, 255, 255),
-	Size = 22,
+	Size = 24,
 }
 
 CovertConfig.Name = {
