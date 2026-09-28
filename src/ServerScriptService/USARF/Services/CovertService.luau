@@ -3,6 +3,7 @@
 -- access). The state lives in CovertState; this service moves players in and
 -- out, validates their choices and serves the covert panel and chat commands.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -20,21 +21,25 @@ local ClanConfig = require(ConfigFolder:WaitForChild("ClanConfig"))
 local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
+local CovertLogConfig = require(USARFServer:WaitForChild("Config"):WaitForChild("CovertLogConfig"))
+
 local CovertState = require(Services:WaitForChild("CovertState"))
 local CertificationService = require(Services:WaitForChild("CertificationService"))
 local SpawnService = require(Services:WaitForChild("SpawnService"))
 local TeamAccessService = require(Services:WaitForChild("TeamAccessService"))
 local NameTagService = require(Services:WaitForChild("NameTagService"))
 local ClanService = require(Services:WaitForChild("ClanService"))
-local RadioService = require(Services:WaitForChild("RadioService"))
-local RadioAccessService = require(Services:WaitForChild("RadioAccessService"))
-local PermissionService = require(Services:WaitForChild("PermissionService"))
 local NotificationService = require(Services:WaitForChild("NotificationService"))
 local AuditService = require(Services:WaitForChild("AuditService"))
 
 local AntiExploitService = nil
 pcall(function()
 	AntiExploitService = require(Services:WaitForChild("AntiExploitService"))
+end)
+
+local DiscordBotBridge = nil
+pcall(function()
+	DiscordBotBridge = require(Services:WaitForChild("DiscordBotBridge"))
 end)
 
 local CovertService = {}
@@ -89,6 +94,67 @@ local function log(player: Player, action: string, message: string, metadata: {[
 		severity = "Info",
 		metadata = metadata or {},
 	})
+end
+
+--// Covert name log (Discord covert name logs channel, backed up to the sheet)
+
+local sheetToken = nil
+do
+	local success, secret = pcall(function()
+		return HttpService:GetSecret(CovertLogConfig.SheetTokenSecretName)
+	end)
+
+	if success then
+		sheetToken = secret
+	end
+end
+
+-- Apps Script answers a POST with a redirect after running doPost, so a 3xx
+-- still means the row was written.
+local function writeSheetRow(entry: {[string]: any})
+	local url = CovertLogConfig.SheetUrl
+	local requestUrl = if sheetToken then sheetToken:AddPrefix(url .. "&token=") else url
+	local body = HttpService:JSONEncode(entry)
+
+	for attempt = 1, CovertLogConfig.SheetMaxAttempts do
+		local success, response = pcall(function()
+			return HttpService:RequestAsync({
+				Url = requestUrl,
+				Method = "POST",
+				Headers = { ["Content-Type"] = "application/json" },
+				Body = body,
+			})
+		end)
+
+		if success and response.StatusCode < 400 then
+			return
+		end
+
+		if attempt == CovertLogConfig.SheetMaxAttempts then
+			warn("[CovertService] Couldn't write covert name to the sheet:", if success then response.StatusCode else response)
+		else
+			task.wait(2 * attempt)
+		end
+	end
+end
+
+-- Records which account is behind a covert name, with the server it happened in.
+local function recordCovertName(player: Player, action: string, covertName: string, previousName: string?)
+	local entry = {
+		action = action,
+		username = player.Name,
+		userId = player.UserId,
+		covertName = covertName,
+		previousName = previousName,
+		jobId = if game.JobId ~= "" then game.JobId else "Studio",
+		timestamp = os.time(),
+	}
+
+	if DiscordBotBridge then
+		DiscordBotBridge.SendEvent(CovertLogConfig.BotEventType, entry)
+	end
+
+	task.spawn(writeSheetRow, entry)
 end
 
 local function buildClientState(player: Player)
@@ -281,8 +347,8 @@ function CovertService.Enter(player: Player, request: {[string]: any}): (boolean
 	local homeKey = player:GetAttribute("USARF_TeamKey")
 	local homeData = homeKey and USARFConfig.Teams[homeKey]
 
-	if not homeData or CovertConfig.BlockedHomeTeams[homeKey] then
-		return false, "Join your department before going covert."
+	if not homeData or not CovertConfig.AllowedHomeTeams[homeKey] then
+		return false, "Covert is only available from the CIA, FDS or Federal Administration."
 	end
 
 	local name, nameError = validateName(player, request.Name)
@@ -321,6 +387,7 @@ function CovertService.Enter(player: Player, request: {[string]: any}): (boolean
 
 	lastToggleAt[player] = os.clock()
 	log(player, "Enter", `{player.Name} went covert as {name}.`, { homeTeam = homeKey, covertName = name })
+	recordCovertName(player, "Enter", name)
 
 	return true, `You are now covert as {name}.`
 end
@@ -364,6 +431,7 @@ local function setName(player: Player, rawName: any): (boolean, string?)
 	end)
 
 	log(player, "Rename", `{player.Name} changed covert name from {oldName} to {name}.`, { covertName = name })
+	recordCovertName(player, "Rename", name, oldName)
 
 	return true, `Name set to {name}.`
 end
@@ -478,65 +546,12 @@ end
 
 --// Chat commands
 
--- The home team's own radio channel (e.g. INTELLIGENCE for the FBI), else the fallback.
-local function chooseRadioChannel(player: Player): string?
-	local teamKey = CovertState.GetHomeTeamKey(player) or PermissionService.GetTeamKey(player)
-
-	for _, channel in USARFConfig.Radio.Channels do
-		if not channel.readOnly
-			and channel.teamKeys
-			and table.find(channel.teamKeys, teamKey)
-			and RadioAccessService.CanSendChannel(player, channel.key)
-		then
-			return channel.key
-		end
-	end
-
-	local fallback = CovertConfig.RadioFallbackChannel
-
-	if RadioAccessService.CanSendChannel(player, fallback) then
-		return fallback
-	end
-
-	return nil
-end
-
-local function getCommandText(text: string): string
-	return trim((string.gsub(text, "^%S+", "", 1)))
-end
-
+-- Covert players keep their home team's radio (PermissionService/RadioService
+-- read CovertState), so they use the normal radio UI to transmit.
 local function setupChatCommands()
 	local folder = Instance.new("Folder")
 	folder.Name = "USARFCovertCommands"
 	folder.Parent = TextChatService
-
-	-- /c <message>: sends to the radio instead of public chat.
-	local radioCommand = Instance.new("TextChatCommand")
-	radioCommand.Name = "CovertRadio"
-	radioCommand.PrimaryAlias = CovertConfig.RadioCommand
-	radioCommand.Parent = folder
-
-	radioCommand.Triggered:Connect(function(textSource, text)
-		local player = Players:GetPlayerByUserId(textSource.UserId)
-		local message = getCommandText(text)
-
-		if not player or message == "" then
-			return
-		end
-
-		local channelKey = chooseRadioChannel(player)
-
-		if not channelKey then
-			notify(player, "You don't have radio access.", "Warning")
-			return
-		end
-
-		local sent, reason = RadioService.Send(channelKey, player, message)
-
-		if not sent then
-			notify(player, `Radio: {tostring(reason)}`, "Warning")
-		end
-	end)
 
 	-- /covert: opens the covert panel for certified players.
 	local panelCommand = Instance.new("TextChatCommand")

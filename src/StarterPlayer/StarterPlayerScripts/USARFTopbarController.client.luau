@@ -155,10 +155,10 @@ local function updateTopbarVisibility()
 			and Player:GetAttribute("USARF_DevMode") == true
 	)
 
-	-- Set by CovertController once the server confirms the Covert certification.
+	-- Set by CovertController: certified and on a team covert is allowed from.
 	covertIcon:setEnabled(
 		not hidden
-			and _G.USARFCovertCertified == true
+			and _G.USARFCovertAvailable == true
 	)
 
 	menuIcon:setEnabled(not hidden)

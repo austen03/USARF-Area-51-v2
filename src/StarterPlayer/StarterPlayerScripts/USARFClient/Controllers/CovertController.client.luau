@@ -228,7 +228,7 @@ local function render()
 	local active = state ~= nil and state.Active == true
 
 	if active then
-		statusLabel.Text = `Active as {state.Name} ({state.SubjectNumber}). Radio: {state.HomeTeam}. Use {CovertConfig.RadioCommand} to transmit.`
+		statusLabel.Text = `Active as {state.Name} ({state.SubjectNumber}). You keep the {state.HomeTeam} radio.`
 		primaryButton.Text = "EXIT COVERT"
 		primaryButton.BackgroundColor3 = Color3.fromRGB(130, 55, 55)
 	else
@@ -248,6 +248,23 @@ local function render()
 	setToggle(clearanceButton, active and state.Clearance)
 end
 
+-- Covert is offered to certified players on an allowed team, and to anyone
+-- already covert (who is on the Test Subject team) so they can come back.
+local function updateAvailability()
+	local teamKey = player:GetAttribute("USARF_TeamKey")
+	local onAllowedTeam = teamKey ~= nil and CovertConfig.AllowedHomeTeams[teamKey] == true
+
+	_G.USARFCovertAvailable = state ~= nil and state.Certified == true and (state.Active == true or onAllowedTeam)
+
+	if typeof(_G.USARFUpdateTopbarVisibility) == "function" then
+		_G.USARFUpdateTopbarVisibility()
+	end
+
+	if not _G.USARFCovertAvailable then
+		frame.Visible = false
+	end
+end
+
 local function applyState(newState)
 	state = newState
 
@@ -255,18 +272,11 @@ local function applyState(newState)
 		nameBox.Text = state.Name or ""
 	end
 
-	_G.USARFCovertCertified = state ~= nil and state.Certified == true
-
-	if typeof(_G.USARFUpdateTopbarVisibility) == "function" then
-		_G.USARFUpdateTopbarVisibility()
-	end
-
-	if not _G.USARFCovertCertified then
-		frame.Visible = false
-	end
-
+	updateAvailability()
 	render()
 end
+
+player:GetAttributeChangedSignal("USARF_TeamKey"):Connect(updateAvailability)
 
 local function request(action, payload)
 	local success, result = pcall(function()
@@ -328,7 +338,7 @@ local function searchOrgs()
 end
 
 local function openPanel()
-	if not _G.USARFCovertCertified then
+	if not _G.USARFCovertAvailable then
 		return
 	end
 

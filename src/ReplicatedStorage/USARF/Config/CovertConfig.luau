@@ -9,11 +9,12 @@ CovertConfig.Certification = "Covert"
 -- The team covert players join.
 CovertConfig.TeamKey = "TestSubject"
 
--- Home teams that cannot go covert.
-CovertConfig.BlockedHomeTeams = {
-	TestSubject = true,
-	Loading = true,
-	PMC = true,
+-- The only teams covert can be used from (USARFConfig.Teams keys). Players on
+-- other teams don't see the Covert button; the certification is still required.
+CovertConfig.AllowedHomeTeams = {
+	CentralIntelligenceAgency = true,
+	FederalDefenseService = true,
+	FederalAdministration = true,
 }
 
 -- Covert players wear the Test Subject team's outfit (UniformConfig.Teams["Test
@@ -42,12 +43,8 @@ CovertConfig.Name = {
 	MaxLength = 20,
 }
 
--- Chat commands. The radio command sends to the radio instead of public chat.
+-- Chat command that opens the covert panel.
 CovertConfig.PanelCommand = "/covert"
-CovertConfig.RadioCommand = "/c"
-
--- Radio channel /c falls back to when the home team has no channel of its own.
-CovertConfig.RadioFallbackChannel = "general"
 
 -- Seconds between going covert and going back (and vice versa).
 CovertConfig.ToggleCooldownSeconds = 10
