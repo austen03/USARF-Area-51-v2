@@ -10,12 +10,14 @@ local Remotes = USARF:WaitForChild("Remotes")
 local ConfigFolder = USARF:WaitForChild("Config")
 
 local EconomyConfig = require(ConfigFolder:WaitForChild("EconomyConfig"))
+local CovertConfig = require(ConfigFolder:WaitForChild("CovertConfig"))
 
 local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local InventoryService = require(Services:WaitForChild("InventoryService"))
 local GamepassService = require(Services:WaitForChild("GamepassService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
 
 local ToolsFolder = ServerStorage:WaitForChild("Tools")
 
@@ -222,6 +224,12 @@ local function giveDefaultTeamTools(player)
 
 	if teamConfig then
 		for _, toolName in ipairs(teamConfig.Default or {}) do
+			giveTool(player, toolName)
+		end
+	end
+
+	if CovertState.IsCovert(player) then
+		for _, toolName in ipairs(CovertConfig.Tools or {}) do
 			giveTool(player, toolName)
 		end
 	end

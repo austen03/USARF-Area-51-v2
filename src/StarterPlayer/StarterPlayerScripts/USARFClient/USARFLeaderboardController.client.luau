@@ -661,7 +661,8 @@ local function copyUsername()
 	createLabel(casePanel, "Select the text below and copy it manually.", UDim2.new(1, -36, 0, 30), UDim2.new(0, 18, 0, 52), 12, false)
 
 	local usernameBox = createTextBox(casePanel, "", UDim2.new(1, -36, 0, 36), UDim2.new(0, 18, 0, 86), false)
-	usernameBox.Text = selectedPlayer.name
+	-- username is the real account name, even when the row shows a covert name.
+	usernameBox.Text = selectedPlayer.username or selectedPlayer.name
 	usernameBox.TextEditable = false
 	usernameBox.TextXAlignment = Enum.TextXAlignment.Center
 	usernameBox.TextYAlignment = Enum.TextYAlignment.Center
