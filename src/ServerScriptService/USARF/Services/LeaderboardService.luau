@@ -10,6 +10,9 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local NameTagService = require(Services:WaitForChild("NameTagService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
+
+local CovertConfig = require(Config:WaitForChild("CovertConfig"))
 
 local LeaderboardService = {}
 
@@ -189,6 +192,14 @@ local function createTeamEntry(teamKey, order)
 	}
 end
 
+local function isModeratorViewer(viewer)
+	local levelValue = tonumber(
+		viewer and viewer:GetAttribute("USARF_CmdrAdminLevelValue")
+	) or 0
+
+	return levelValue >= MODERATOR_LEVEL_VALUE
+end
+
 local function viewerCanSeeHiddenPlayer(viewer, target)
 	if not target:GetAttribute("USARF_HideFromLeaderboard") then
 		return true
@@ -198,11 +209,40 @@ local function viewerCanSeeHiddenPlayer(viewer, target)
 		return true
 	end
 
-	local levelValue = tonumber(
-		viewer and viewer:GetAttribute("USARF_CmdrAdminLevelValue")
-	) or 0
+	return isModeratorViewer(viewer)
+end
 
-	return levelValue >= MODERATOR_LEVEL_VALUE
+-- Name, username (for moderators' Copy Username), user id and icons a viewer
+-- gets for a player. Covert players show their covert name; only moderators
+-- (who get a covert icon) and the player themselves keep the real user id.
+local function getShownIdentity(viewer, player)
+	local covert = CovertState.Get(player)
+	local icons = getPlayerIcons(player)
+
+	if not covert then
+		return player.Name, player.DisplayName, player.Name, player.UserId, icons
+	end
+
+	local isModerator = isModeratorViewer(viewer)
+
+	if isModerator then
+		local icon = CovertConfig.ModeratorIcon
+
+		table.insert(icons, 1, {
+			name = "Covert",
+			image = icon.Image,
+			color = colorToTable(icon.Color),
+			size = icon.Size,
+		})
+	end
+
+	local seesThrough = isModerator or viewer == player
+
+	return covert.Name,
+		covert.Name,
+		if seesThrough then player.Name else covert.Name,
+		if seesThrough then player.UserId else 0,
+		icons
 end
 
 local function buildPayload(viewer)
@@ -225,13 +265,16 @@ local function buildPayload(viewer)
 				table.insert(teams, entry)
 			end
 
+			local name, displayName, username, userId, icons = getShownIdentity(viewer, player)
+
 			table.insert(teamMap[teamKey].players, {
-				userId = player.UserId,
-				name = player.Name,
-				displayName = player.DisplayName,
+				userId = userId,
+				name = name,
+				displayName = displayName,
+				username = username,
 				teamKey = teamKey,
 				teamName = getTeamDisplayName(teamKey),
-				icons = getPlayerIcons(player),
+				icons = icons,
 				badgesEnabled = player:GetAttribute("USARF_BadgesEnabled") == true,
 				isAFK = player:GetAttribute("USARF_AFK") == true,
 				isSuspiciousIdle = player:GetAttribute("USARF_SuspiciousIdle") == true,
@@ -332,6 +375,10 @@ function LeaderboardService.Start()
 	for _, player in ipairs(Players:GetPlayers()) do
 		hookPlayer(player)
 	end
+
+	CovertState.Changed:Connect(function()
+		task.defer(LeaderboardService.Broadcast)
+	end)
 
 	task.spawn(function()
 		while started do

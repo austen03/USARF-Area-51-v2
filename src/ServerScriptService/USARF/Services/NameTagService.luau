@@ -7,6 +7,7 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local RankService = require(Services:WaitForChild("RankService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local TeamConfig = require(USARF:WaitForChild("Config"):WaitForChild("TeamConfig"))
@@ -390,9 +391,22 @@ local function isTestSubject(player)
 	return getTeamName(player) == "Test Subject" or player:GetAttribute("USARF_TeamKey") == "TestSubject"
 end
 
--- Clan tag and logo (attributes set by ClanService) only show on the Test Subject name tag.
+-- The clan a player shows: their covert org while covert (none unless they picked
+-- one), otherwise the clan ClanService set on them.
+local function getShownClan(player)
+	local covert = CovertState.Get(player)
+
+	if covert then
+		local org = covert.Org
+		return if org then org.Tag else nil, if org then org.Logo else nil, if org then org.Color else nil
+	end
+
+	return player:GetAttribute("USARF_ClanTag"), player:GetAttribute("USARF_ClanLogo"), player:GetAttribute("USARF_ClanColor")
+end
+
+-- Clan tag and logo only show on the Test Subject name tag.
 local function getClanPrefix(player)
-	local tag = player:GetAttribute("USARF_ClanTag")
+	local tag = getShownClan(player)
 
 	if isTestSubject(player) and typeof(tag) == "string" and tag ~= "" then
 		return "[" .. tag .. "] "
@@ -402,13 +416,11 @@ local function getClanPrefix(player)
 end
 
 local function getClanIcon(player)
-	local image = player:GetAttribute("USARF_ClanLogo")
+	local _, image, color = getShownClan(player)
 
 	if not isTestSubject(player) or typeof(image) ~= "string" or image == "" or image == "rbxassetid://0" then
 		return nil
 	end
-
-	local color = player:GetAttribute("USARF_ClanColor")
 
 	return {
 		name = "Clan",
@@ -422,7 +434,19 @@ local function isPMC(player)
 	return getTeamName(player) == "PMC" or player:GetAttribute("USARF_TeamKey") == "PMC"
 end
 
+-- The name shown for a player: their covert name while covert.
+local function getShownName(player)
+	local covert = CovertState.Get(player)
+	return if covert then covert.Name else player.Name
+end
+
 local function getTestSubjectNumber(player)
+	local covert = CovertState.Get(player)
+
+	if covert then
+		return covert.SubjectNumber
+	end
+
 	if not testSubjectNumbers[player.UserId] then
 		local number = ((player.UserId * 37) % 90000) + 10000
 		testSubjectNumbers[player.UserId] = string.format("TS-%05d", number)
@@ -480,6 +504,17 @@ local function playerOwnsGoldNametag(player)
 	end
 
 	return false
+end
+
+-- Covert players toggle the gold stars themselves, whether or not they own them.
+local function isGoldMode(player)
+	local covert = CovertState.Get(player)
+
+	if covert then
+		return covert.Gold == true
+	end
+
+	return playerOwnsGoldNametag(player)
 end
 
 local function isSpecialTitleRank(player)
@@ -655,6 +690,11 @@ local function getBadgeMap(player)
 end
 
 local function getIcons(player)
+	-- Staff and supporter badges would give a covert player away.
+	if CovertState.IsCovert(player) then
+		return {}
+	end
+
 	local badgeMap = getBadgeMap(player)
 	local icons = {}
 	local badgesEnabled = areBadgesEnabled(player)
@@ -771,7 +811,7 @@ local function buildStandardDisplayLines(player)
 	local customTitle = getCustomTitle(player)
 	local clearance = getClearanceLevel(player)
 	local departmentRank = getDepartmentalRank(player)
-	local goldMode = playerOwnsGoldNametag(player)
+	local goldMode = isGoldMode(player)
 
 	local forcedName = getNameOverride(player)
 	local displayName = forcedName or tostring(player.Name)
@@ -796,7 +836,8 @@ local function buildSpecialDisplay(player, goldMode)
 	local forcedRank = getRankOverride(player)
 	local forcedColor = getColorOverride(player)
 
-	if forcedName or forcedRank or forcedColor then
+	-- editnametag overrides would replace the covert Test Subject tag.
+	if (forcedName or forcedRank or forcedColor) and not CovertState.IsCovert(player) then
 		local displayName = forcedName or player.Name
 
 		if goldMode then
@@ -835,7 +876,7 @@ local function buildSpecialDisplay(player, goldMode)
 				lines = {
 					{ name = "StatusLabel", text = "[TERMINATE]", height = 22, color = Color3.fromRGB(255, 45, 45), order = 2 },
 					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(255, 55, 55), order = 3 },
-					{ name = "UsernameLabel", text = clanPrefix .. player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{ name = "UsernameLabel", text = clanPrefix .. getShownName(player), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
 				},
 			}
 		elseif status == "AUTHORIZED" then
@@ -844,7 +885,7 @@ local function buildSpecialDisplay(player, goldMode)
 				lines = {
 					{ name = "StatusLabel", text = "[AUTHORIZED]", height = 22, color = Color3.fromRGB(90, 255, 115), order = 2 },
 					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(90, 255, 115), order = 3 },
-					{ name = "UsernameLabel", text = clanPrefix .. player.Name, height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{ name = "UsernameLabel", text = clanPrefix .. getShownName(player), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
 				},
 			}
 		end
@@ -853,7 +894,7 @@ local function buildSpecialDisplay(player, goldMode)
 			mode = "TestSubject",
 			lines = {
 				{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = goldMode and GOLD_COLOR or Color3.fromRGB(220, 220, 60), order = 2 },
-				{ name = "UsernameLabel", text = clanPrefix .. (goldMode and ("★ " .. player.Name .. " ★") or player.Name), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 3 },
+				{ name = "UsernameLabel", text = clanPrefix .. (goldMode and ("★ " .. getShownName(player) .. " ★") or getShownName(player)), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 3 },
 			},
 		}
 	end
@@ -901,7 +942,7 @@ function NameTagService.Apply(player)
 		humanoid.HealthDisplayDistance = 0
 	end
 
-	local goldMode = playerOwnsGoldNametag(player)
+	local goldMode = isGoldMode(player)
 	local icons = getIcons(player)
 
 	local clanIcon = getClanIcon(player)
@@ -1048,6 +1089,11 @@ end
 
 function NameTagService.PlayerHasGoldNametag(player)
 	return playerOwnsGoldNametag(player)
+end
+
+-- The TS-##### number shown on a player's Test Subject tag.
+function NameTagService.GetTestSubjectNumber(player)
+	return getTestSubjectNumber(player)
 end
 
 function NameTagService.SetCustomTitle(userId, title)

@@ -5,11 +5,13 @@ local ServerStorage = game:GetService("ServerStorage")
 local USARFStorage = ReplicatedStorage:WaitForChild("USARF")
 local ConfigFolder = USARFStorage:WaitForChild("Config")
 local UniformConfig = require(ConfigFolder:WaitForChild("UniformConfig"))
+local CovertConfig = require(ConfigFolder:WaitForChild("CovertConfig"))
 local UniformLoadoutIndex = require(USARFStorage:WaitForChild("Shared"):WaitForChild("UniformLoadoutIndex"))
 
 local ServerScriptService = game:GetService("ServerScriptService")
 local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
 local AvatarBlacklistService = require(Services:WaitForChild("AvatarBlacklistService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
 
 local MorphsFolder = ServerStorage:WaitForChild("Morphs")
 local UniformAssets = ServerStorage:WaitForChild("UniformAssets")
@@ -1712,6 +1714,24 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 	-- as Test Subject, their original clothing and accessories back.
 	restoreOriginalAppearance(player, character)
 
+	-- Covert players wear the Test Subject outfit so their own avatar doesn't give them away.
+	if CovertState.IsCovert(player) then
+		local outfit = CovertConfig.Outfit
+		local shirt = tonumber(outfit.Shirt) or 0
+		local pants = tonumber(outfit.Pants) or 0
+
+		UniformService.ApplyUniformToCharacter(character, {
+			Clothing = {
+				Shirt = if shirt > 0 then shirt else nil,
+				Pants = if pants > 0 then pants else nil,
+			},
+			RemoveExistingClothing = shirt > 0 or pants > 0,
+			RemoveAvatarAccessories = outfit.RemoveAvatarAccessories ~= false,
+		})
+
+		return
+	end
+
 	-- An admin-set loadout can swap the division and/or class (or remove the class
 	-- uniform, when cleared); anything it leaves unset comes from the team and rank.
 	local loadout = loadouts[player]
@@ -1932,7 +1952,7 @@ local function handleTeamChanged(player: Player)
 
 	local teamConfig = resolveTeamConfig(player, nil)
 
-	if teamConfig and configValue(teamConfig, "ApplyOnTeamChange", true) then
+	if CovertState.IsCovert(player) or (teamConfig and configValue(teamConfig, "ApplyOnTeamChange", true)) then
 		applyUniformDeferred(player)
 	end
 end
@@ -1962,7 +1982,7 @@ local function connectPlayer(player: Player)
 
 		local teamConfig = resolveTeamConfig(player, nil)
 
-		if loadouts[player] or (teamConfig and configValue(teamConfig, "ApplyOnSpawn", true)) then
+		if loadouts[player] or CovertState.IsCovert(player) or (teamConfig and configValue(teamConfig, "ApplyOnSpawn", true)) then
 			applyUniformDeferred(player)
 		end
 	end))

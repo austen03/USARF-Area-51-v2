@@ -8,7 +8,23 @@ local Services = USARFServer:WaitForChild("Services")
 
 local BASE_URL = "https://admin.usarfutilities.org/roblox"
 
-local SHARED_SECRET = "43fa20b4-92e3-43f4-b74c-a8f0204f2d28"
+-- The bot's shared secret lives in the Roblox Secrets Store (Creator Hub →
+-- experience → Secrets; for Studio: Game Settings → Security → Secrets), never
+-- in source. Its domain must allow admin.usarfutilities.org.
+local SHARED_SECRET_NAME = "USARFBotSharedSecret"
+
+local SHARED_SECRET = nil
+do
+	local success, result = pcall(function()
+		return HttpService:GetSecret(SHARED_SECRET_NAME)
+	end)
+
+	if success then
+		SHARED_SECRET = result
+	else
+		warn(`[DiscordBotBridge] Secret "{SHARED_SECRET_NAME}" is not set; bot requests will be rejected: {result}`)
+	end
+end
 
 local DEBUG = false
 
@@ -409,6 +425,19 @@ local function requestOpenCase(payload)
 end
 
 local Bridge = {}
+
+-- Immediate (unqueued) request for callers that need the reply, such as reads.
+-- Returns { ok, statusCode, body, data }, or nil if the request errored.
+function Bridge.Request(path, method, payload)
+	local success, result = pcall(performRequest, path, method, payload)
+
+	if not success then
+		debugWarn("Request errored:", path, result)
+		return nil
+	end
+
+	return result
+end
 
 function Bridge.SendEvent(eventType, payload)
 	enqueue("/events", "POST", {
