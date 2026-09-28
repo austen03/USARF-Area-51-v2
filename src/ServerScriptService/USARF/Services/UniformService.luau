@@ -5,6 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local USARFStorage = ReplicatedStorage:WaitForChild("USARF")
 local ConfigFolder = USARFStorage:WaitForChild("Config")
 local UniformConfig = require(ConfigFolder:WaitForChild("UniformConfig"))
+local UniformLoadoutIndex = require(USARFStorage:WaitForChild("Shared"):WaitForChild("UniformLoadoutIndex"))
 
 local ServerScriptService = game:GetService("ServerScriptService")
 local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
@@ -21,6 +22,23 @@ local connections: {RBXScriptConnection} = {}
 local playerConnections: {[Player]: {RBXScriptConnection}} = {}
 local applyGenerations: {[Player]: number} = {}
 local originalDescriptions: {[Player]: HumanoidDescription} = {}
+
+-- Morphs are laid out per team (the "Folder" in UniformConfig.Teams):
+-- 	ServerStorage.Morphs.Classes.<Folder>.<MorphName>     the uniform itself
+-- 	ServerStorage.Morphs.SubClasses.<Folder>.<MorphName>  layered over the class
+local CLASS_FOLDER_NAME = "Classes"
+local SUB_CLASS_FOLDER_NAME = "SubClasses"
+
+-- Admin-set loadouts (the `loadout` command). Any field left nil falls back to
+-- the normal team/rank logic. Kept across respawns, dropped on team change.
+export type Loadout = {
+	Cleared: boolean?, -- no class uniform; the player keeps their own avatar
+	Division: string?, -- UniformConfig.Teams key, or a bare Morphs.Classes folder name
+	Class: string?, -- morph in the division's Classes folder, instead of the rank's
+	SubClass: string?, -- morph in the division's SubClasses folder
+}
+
+local loadouts: {[Player]: Loadout} = {}
 
 local ATTACHMENT_FOLDER_NAME = "USARFUniformAttachments"
 local MORPH_ITEM_ATTRIBUTE = "USARFMorphItem"
@@ -824,7 +842,11 @@ local function getRankTabTexture(player: Player?, teamConfig: any, rankTabs: any
 	end
 
 	local groupId = rankTabs.GroupId or rankTabs.GroupID or teamConfig.GroupId or teamConfig.GroupID
-	local rank = getPlayerRankForUniform(player, groupId)
+
+	-- A loadout-forced uniform shows the rank tab for that uniform, not the wearer's rank.
+	local rank = if typeof(teamConfig.ForcedRank) == "number"
+		then teamConfig.ForcedRank
+		else getPlayerRankForUniform(player, groupId)
 
 	return rankTabs[rank]
 		or rankTabs[tostring(rank)]
@@ -893,26 +915,66 @@ local function attachConfiguredRankTabs(character: Model, teamConfig: any, rankT
 	end
 end
 
-local function resolveTeamConfig(player: Player, requestedTeam: any?): any?
+local function getTeamConfigs(): {[string]: any}
 	local teams = UniformConfig.Teams or UniformConfig.TeamConfigs or UniformConfig.Uniforms
+	return if typeof(teams) == "table" then teams else {}
+end
 
-	if typeof(teams) ~= "table" then
-		return nil
-	end
+-- The UniformConfig.Teams key for the requested team, or else the player's own team.
+local function resolveTeamKey(player: Player, requestedTeam: any?): any?
+	local teams = getTeamConfigs()
 
 	if requestedTeam ~= nil and teams[requestedTeam] then
-		return teams[requestedTeam]
+		return requestedTeam
 	end
 
 	if player.Team and teams[player.Team.Name] then
-		return teams[player.Team.Name]
+		return player.Team.Name
 	end
 
 	if player.TeamColor and teams[player.TeamColor.Name] then
-		return teams[player.TeamColor.Name]
+		return player.TeamColor.Name
 	end
 
 	return nil
+end
+
+local function resolveTeamConfig(player: Player, requestedTeam: any?): any?
+	local teamKey = resolveTeamKey(player, requestedTeam)
+	return if teamKey ~= nil then getTeamConfigs()[teamKey] else nil
+end
+
+local function isMorph(instance: Instance): boolean
+	return instance:IsA("Folder") or instance:IsA("Model")
+end
+
+local function isLayerFolder(folder: Instance): boolean
+	return folder.Name == CLASS_FOLDER_NAME or folder.Name == SUB_CLASS_FOLDER_NAME
+end
+
+-- A team's uniforms (its classes) live in Morphs.Classes.<Folder>.<MorphName>.
+-- Morphs.<Folder> is still read so morphs keep working until they are moved.
+local function getClassFolder(folderName: string): Instance?
+	local classesFolder = MorphsFolder:FindFirstChild(CLASS_FOLDER_NAME)
+	local teamFolder = if classesFolder then classesFolder:FindFirstChild(folderName) else nil
+
+	if teamFolder then
+		return teamFolder
+	end
+
+	local legacyFolder = MorphsFolder:FindFirstChild(folderName)
+
+	if legacyFolder and not isLayerFolder(legacyFolder) then
+		return legacyFolder
+	end
+
+	return nil
+end
+
+-- Sub classes are layered over a class: Morphs.SubClasses.<Folder>.<MorphName>.
+local function getSubClassFolder(folderName: string): Instance?
+	local subClassesFolder = MorphsFolder:FindFirstChild(SUB_CLASS_FOLDER_NAME)
+	return if subClassesFolder then subClassesFolder:FindFirstChild(folderName) else nil
 end
 
 local function resolveRankMapValue(rankMap: any, rank: number): any
@@ -1072,10 +1134,10 @@ local function resolveMorphModel(player: Player, teamConfig: any): Instance?
 		return nil
 	end
 
-	local teamMorphFolder = MorphsFolder:FindFirstChild(tostring(folderName))
+	local teamMorphFolder = getClassFolder(tostring(folderName))
 
 	if not teamMorphFolder then
-		warn(`USARF UniformService: morph folder {tostring(folderName)} was not found`)
+		warn(`USARF UniformService: morph folder {CLASS_FOLDER_NAME}/{tostring(folderName)} was not found`)
 		return nil
 	end
 
@@ -1094,6 +1156,253 @@ local function resolveMorphModel(player: Player, teamConfig: any): Instance?
 	end
 
 	return rankFolderOrModel
+end
+
+local function sortedMorphNames(folder: Instance?): {string}
+	local names = {}
+
+	if not folder then
+		return names
+	end
+
+	for _, child in folder:GetChildren() do
+		if isMorph(child) then
+			table.insert(names, child.Name)
+		end
+	end
+
+	table.sort(names)
+	return names
+end
+
+local function rankMapEntryName(value: any): string?
+	if typeof(value) == "table" then
+		local name = value.Morph or value.MorphName or value.Name or value.Folder
+		return if name then tostring(name) else nil
+	end
+
+	return if value ~= nil then tostring(value) else nil
+end
+
+local function findRankForMorph(rankMap: any, morphName: string): number?
+	if typeof(rankMap) ~= "table" then
+		return nil
+	end
+
+	local lowestRank: number? = nil
+
+	for rank, value in rankMap do
+		local numericRank = tonumber(rank)
+
+		if numericRank and rankMapEntryName(value) == morphName and (lowestRank == nil or numericRank < lowestRank) then
+			lowestRank = numericRank
+		end
+	end
+
+	return lowestRank
+end
+
+-- A division is a UniformConfig team entry, or any other team folder in
+-- Morphs.Classes (which then has no patches, rank tabs or rank-based default).
+local function getDivisionConfig(divisionName: string): any?
+	local teamConfig = getTeamConfigs()[divisionName]
+
+	if typeof(teamConfig) == "table" then
+		return teamConfig
+	end
+
+	if getClassFolder(divisionName) then
+		return { Folder = divisionName }
+	end
+
+	return nil
+end
+
+-- Whether a division can pick a uniform on its own, without a class being named.
+local function hasDefaultClass(divisionConfig: any): boolean
+	return divisionConfig.Morph ~= nil
+		or divisionConfig.MorphName ~= nil
+		or divisionConfig.RankMap ~= nil
+		or divisionConfig.Variants ~= nil
+		or (divisionConfig.Fallback ~= nil and divisionConfig.Fallback ~= "")
+end
+
+local function getDivisionFolderName(divisionConfig: any): string?
+	local folderName = divisionConfig.Folder or divisionConfig.MorphFolder
+	return if folderName then tostring(folderName) else nil
+end
+
+local function getDivisionClassFolder(divisionName: string?): Instance?
+	local divisionConfig = if divisionName then getDivisionConfig(divisionName) else nil
+	local folderName = if divisionConfig then getDivisionFolderName(divisionConfig) else nil
+	return if folderName then getClassFolder(folderName) else nil
+end
+
+local function getDivisionSubClassFolder(divisionName: string?): Instance?
+	local divisionConfig = if divisionName then getDivisionConfig(divisionName) else nil
+	local folderName = if divisionConfig then getDivisionFolderName(divisionConfig) else nil
+	return if folderName then getSubClassFolder(folderName) else nil
+end
+
+local function findMorphIn(folder: Instance?, morphName: string?): Instance?
+	local morph = if folder and morphName then folder:FindFirstChild(morphName) else nil
+	return if morph and isMorph(morph) then morph else nil
+end
+
+-- The config for wearing class `className` from a division: the variant whose
+-- RankMap lists that class (so its patches come along), with the morph and the
+-- rank tab pinned to that class instead of the wearer's own group rank.
+local function resolveDivisionConfig(divisionName: string, className: string): any?
+	local baseConfig = getDivisionConfig(divisionName)
+
+	if not baseConfig then
+		return nil
+	end
+
+	local resolvedConfig = shallowCopy(baseConfig)
+	resolvedConfig.Variants = nil
+
+	local rank = findRankForMorph(baseConfig.RankMap, className)
+
+	if not rank and typeof(baseConfig.Variants) == "table" then
+		for _, variant in baseConfig.Variants do
+			local variantRank = if typeof(variant) == "table" then findRankForMorph(variant.RankMap, className) else nil
+
+			if variantRank then
+				for key, value in variant do
+					resolvedConfig[key] = value
+				end
+
+				resolvedConfig.ActiveVariantName = variant.Name
+				rank = variantRank
+				break
+			end
+		end
+	end
+
+	resolvedConfig.Morph = className
+	resolvedConfig.ForcedRank = rank or 0
+
+	return resolvedConfig
+end
+
+-- UniformConfig teams that have morphs, then any unconfigured team folders.
+local function getDivisionNames(): {string}
+	local names = {}
+	local usedFolders = {}
+
+	local teamNames = {}
+	for teamName in getTeamConfigs() do
+		table.insert(teamNames, teamName)
+	end
+	table.sort(teamNames)
+
+	for _, teamName in teamNames do
+		local folder = getDivisionClassFolder(teamName)
+
+		if folder then
+			usedFolders[folder] = true
+			table.insert(names, teamName)
+		end
+	end
+
+	local candidateFolders = {}
+	local classesFolder = MorphsFolder:FindFirstChild(CLASS_FOLDER_NAME)
+
+	if classesFolder then
+		for _, name in sortedMorphNames(classesFolder) do
+			table.insert(candidateFolders, name)
+		end
+	end
+
+	for _, name in sortedMorphNames(MorphsFolder) do
+		table.insert(candidateFolders, name)
+	end
+
+	for _, folderName in candidateFolders do
+		local folder = getClassFolder(folderName)
+
+		if folder and not usedFolders[folder] and not table.find(names, folderName) then
+			usedFolders[folder] = true
+			table.insert(names, folderName)
+		end
+	end
+
+	return names
+end
+
+-- Classes in rank order (as the RankMaps list them), then any other morphs in the folder.
+local function getDivisionClassNames(divisionName: string): {string}
+	local divisionConfig = getDivisionConfig(divisionName)
+	local folder = getDivisionClassFolder(divisionName)
+	local names = {}
+
+	if not divisionConfig or not folder then
+		return names
+	end
+
+	local function add(name: string?)
+		if name and name ~= "" and not table.find(names, name) and findMorphIn(folder, name) then
+			table.insert(names, name)
+		end
+	end
+
+	local function addRankMap(rankMap: any)
+		if typeof(rankMap) ~= "table" then
+			return
+		end
+
+		local ranks = {}
+		for rank in rankMap do
+			if tonumber(rank) then
+				table.insert(ranks, rank)
+			end
+		end
+
+		table.sort(ranks, function(a, b)
+			return tonumber(a) < tonumber(b)
+		end)
+
+		for _, rank in ranks do
+			add(rankMapEntryName(rankMap[rank]))
+		end
+	end
+
+	addRankMap(divisionConfig.RankMap)
+
+	if typeof(divisionConfig.Variants) == "table" then
+		for _, variant in divisionConfig.Variants do
+			if typeof(variant) == "table" then
+				addRankMap(variant.RankMap)
+			end
+		end
+	end
+
+	add(if divisionConfig.Fallback then tostring(divisionConfig.Fallback) else nil)
+
+	for _, name in sortedMorphNames(folder) do
+		add(name)
+	end
+
+	return names
+end
+
+local function publishLoadoutIndex()
+	local divisions = {}
+
+	for _, divisionName in getDivisionNames() do
+		local classes = getDivisionClassNames(divisionName)
+
+		if #classes > 0 then
+			table.insert(divisions, {
+				Name = divisionName,
+				Classes = classes,
+				SubClasses = sortedMorphNames(getDivisionSubClassFolder(divisionName)),
+			})
+		end
+	end
+
+	UniformLoadoutIndex.Publish(divisions)
 end
 
 local function stripNumberSuffix(name: string): string
@@ -1236,6 +1545,44 @@ local function applyMorphItems(character: Model, humanoid: Humanoid, rankFolderO
 	end
 end
 
+local function isClothing(instance: Instance): boolean
+	return instance:IsA("Shirt") or instance:IsA("Pants") or instance:IsA("ShirtGraphic")
+end
+
+-- Sub class morphs go on top of whatever is already worn. A layer piece replaces
+-- the worn morph piece of the same name (a sub class "Hair" helmet removes the
+-- class's "Hair" beret), and clothing in the layer only replaces the matching
+-- piece, so a layer with just a Shirt keeps the class's pants.
+local function applyLayerMorph(character: Model, humanoid: Humanoid, layerMorph: Instance)
+	for _, layerPiece in getMorphPartsContainer(layerMorph):GetChildren() do
+		if layerPiece.Name ~= "Clothing" then
+			for _, child in character:GetChildren() do
+				if child.Name == layerPiece.Name and child:GetAttribute(MORPH_ITEM_ATTRIBUTE) then
+					child:Destroy()
+				end
+			end
+		end
+	end
+
+	local clothingSource = layerMorph:FindFirstChild("Clothing")
+
+	if clothingSource then
+		for _, clothingObject in clothingSource:GetChildren() do
+			if isClothing(clothingObject) then
+				for _, child in character:GetChildren() do
+					if child.ClassName == clothingObject.ClassName then
+						child:Destroy()
+					end
+				end
+
+				applyClothingObject(character, clothingObject)
+			end
+		end
+	end
+
+	applyMorphItems(character, humanoid, layerMorph)
+end
+
 local function getHumanoid(character: Model): Humanoid?
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 
@@ -1365,9 +1712,31 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 	-- as Test Subject, their original clothing and accessories back.
 	restoreOriginalAppearance(player, character)
 
-	local teamConfig = resolveTeamConfig(player, requestedTeam)
+	-- An admin-set loadout can swap the division and/or class (or remove the class
+	-- uniform, when cleared); anything it leaves unset comes from the team and rank.
+	local loadout = loadouts[player]
+	local divisionName = if loadout and loadout.Division then loadout.Division else resolveTeamKey(player, requestedTeam)
+	local teamConfig: any = nil
+	local morphModel: Instance? = nil
 
-	if not teamConfig then
+	player:SetAttribute("USARF_UniformDivision", divisionName)
+
+	if divisionName ~= nil and not (loadout and loadout.Cleared) then
+		if loadout and loadout.Class then
+			teamConfig = resolveDivisionConfig(divisionName, loadout.Class)
+		else
+			local divisionConfig = getDivisionConfig(divisionName)
+			teamConfig = if divisionConfig then resolveActiveTeamConfig(player, divisionConfig) else nil
+		end
+
+		morphModel = resolveMorphModel(player, teamConfig)
+	end
+
+	local subClassMorph = if loadout and loadout.SubClass
+		then findMorphIn(getDivisionSubClassFolder(divisionName), loadout.SubClass)
+		else nil
+
+	if not morphModel and not subClassMorph then
 		return
 	end
 
@@ -1378,33 +1747,32 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		return
 	end
 
-	teamConfig = resolveActiveTeamConfig(player, teamConfig)
+	if morphModel then
+		if configValue(teamConfig, "RemoveExistingClothing", true) then
+			removeExistingClothing(character)
+		end
 
-	local morphModel = resolveMorphModel(player, teamConfig)
+		if configValue(teamConfig, "RemoveAvatarAccessories", true) then
+			removeAvatarAccessories(character)
+		end
 
-	if not morphModel then
-		return
+		applyClothing(character, morphModel, teamConfig)
+		applyMorphItems(character, humanoid, morphModel)
+
+		local textures = UniformConfig.Textures or {}
+
+		attachConfiguredPatches(character, teamConfig.Patches, textures.Patches)
+		attachConfiguredRankTabs(character, teamConfig, teamConfig.RankTabs, textures.RankTabs, player)
+
+		character:SetAttribute("USARFUniformApplied", true)
+		character:SetAttribute("USARFUniformMorph", morphModel.Name)
+		character:SetAttribute("USARFUniformVariant", teamConfig.ActiveVariantName)
 	end
 
-	if configValue(teamConfig, "RemoveExistingClothing", true) then
-		removeExistingClothing(character)
+	if subClassMorph then
+		applyLayerMorph(character, humanoid, subClassMorph)
 	end
 
-	if configValue(teamConfig, "RemoveAvatarAccessories", true) then
-		removeAvatarAccessories(character)
-	end
-
-	applyClothing(character, morphModel, teamConfig)
-	applyMorphItems(character, humanoid, morphModel)
-
-	local textures = UniformConfig.Textures or {}
-
-	attachConfiguredPatches(character, teamConfig.Patches, textures.Patches)
-	attachConfiguredRankTabs(character, teamConfig, teamConfig.RankTabs, textures.RankTabs, player)
-
-	character:SetAttribute("USARFUniformApplied", true)
-	character:SetAttribute("USARFUniformMorph", morphModel.Name)
-	character:SetAttribute("USARFUniformVariant", teamConfig.ActiveVariantName)
 	AvatarBlacklistService.FilterCharacter(character)
 end
 
@@ -1481,7 +1849,82 @@ local function applyUniformDeferred(player: Player)
 	end)
 end
 
+local function publishLoadoutAttributes(player: Player, loadout: Loadout?)
+	player:SetAttribute("USARF_LoadoutCleared", if loadout and loadout.Cleared then true else nil)
+	player:SetAttribute("USARF_LoadoutDivision", if loadout then loadout.Division else nil)
+	player:SetAttribute("USARF_LoadoutClass", if loadout then loadout.Class else nil)
+	player:SetAttribute("USARF_LoadoutSubClass", if loadout then loadout.SubClass else nil)
+end
+
+local function validateLoadout(player: Player, loadout: Loadout): (boolean, string?)
+	local divisionName = loadout.Division or resolveTeamKey(player, nil)
+	local divisionConfig = if divisionName ~= nil then getDivisionConfig(divisionName) else nil
+
+	if loadout.Division and not divisionConfig then
+		return false, `Division "{loadout.Division}" was not found.`
+	end
+
+	if (loadout.Class or loadout.SubClass) and not divisionConfig then
+		return false, "they have no division; set one with setDivision first"
+	end
+
+	if loadout.Class and not findMorphIn(getDivisionClassFolder(divisionName), loadout.Class) then
+		return false, `class "{loadout.Class}" was not found in {divisionName}`
+	end
+
+	if loadout.Division and not loadout.Class and not loadout.Cleared and not hasDefaultClass(divisionConfig) then
+		return false, `{loadout.Division} has no rank-based uniform; choose a class too`
+	end
+
+	if loadout.SubClass and not findMorphIn(getDivisionSubClassFolder(divisionName), loadout.SubClass) then
+		return false, `sub class "{loadout.SubClass}" was not found in {divisionName}`
+	end
+
+	return true
+end
+
+function UniformService.GetLoadout(player: Player): Loadout?
+	local loadout = loadouts[player]
+	return if loadout then table.clone(loadout) else nil
+end
+
+-- Sets a player's loadout (nil goes back to the normal team/rank uniform) and
+-- re-dresses them straight away. Without a character it applies on next spawn.
+function UniformService.SetLoadout(player: Player, loadout: Loadout?): (boolean, string?)
+	if loadout then
+		local valid, errorMessage = validateLoadout(player, loadout)
+
+		if not valid then
+			return false, errorMessage
+		end
+
+		loadout = table.clone(loadout)
+	end
+
+	loadouts[player] = loadout
+	publishLoadoutAttributes(player, loadout)
+	UniformService.ReapplyUniform(player)
+
+	return true
+end
+
+function UniformService.ReapplyUniform(player: Player): boolean
+	if not player.Character then
+		return false
+	end
+
+	invalidatePendingApply(player)
+	UniformService.ApplyUniform(player)
+
+	return true
+end
+
 local function handleTeamChanged(player: Player)
+	-- A loadout belongs to the team it was set on; the new team gets its own uniform.
+	loadouts[player] = nil
+	publishLoadoutAttributes(player, nil)
+	player:SetAttribute("USARF_UniformDivision", resolveTeamKey(player, nil))
+
 	-- Cancel any delayed application from the previous team and immediately
 	-- clear the old morph before the menu or spawn system does anything else.
 	invalidatePendingApply(player)
@@ -1519,7 +1962,7 @@ local function connectPlayer(player: Player)
 
 		local teamConfig = resolveTeamConfig(player, nil)
 
-		if teamConfig and configValue(teamConfig, "ApplyOnSpawn", true) then
+		if loadouts[player] or (teamConfig and configValue(teamConfig, "ApplyOnSpawn", true)) then
 			applyUniformDeferred(player)
 		end
 	end))
@@ -1550,6 +1993,8 @@ function UniformService.Start()
 
 	started = true
 
+	publishLoadoutIndex()
+
 	appendConnection(Players.PlayerAdded:Connect(connectPlayer))
 
 	appendConnection(Players.PlayerRemoving:Connect(function(player)
@@ -1558,6 +2003,7 @@ function UniformService.Start()
 		UniformService.ClearPlayerUniform(player, false)
 		originalDescriptions[player] = nil
 		applyGenerations[player] = nil
+		loadouts[player] = nil
 	end))
 
 	for _, player in Players:GetPlayers() do
@@ -1581,6 +2027,7 @@ function UniformService.Stop()
 
 	applyGenerations = {}
 	originalDescriptions = {}
+	loadouts = {}
 	started = false
 end
 

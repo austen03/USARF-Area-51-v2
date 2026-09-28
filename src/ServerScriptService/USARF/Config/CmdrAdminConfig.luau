@@ -772,6 +772,15 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
+	loadout = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = "Training",
+		ReserveOnlyTraining = true,
+		Log = true,
+		CaseId = false,
+	},
+
 	fly = {
 		MainServerLevel = "Developer",
 		DisplayGroup = "Developer",
