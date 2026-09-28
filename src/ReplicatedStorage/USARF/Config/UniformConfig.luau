@@ -155,6 +155,18 @@ local R = UniformConfig.Textures.RankTabs
 local P = UniformConfig.Textures.Patches
 
 UniformConfig.Teams = {
+	-- No morph: Test Subjects keep their own avatar (accessories included) but
+	-- wear the Test Subject shirt and pants. Covert players wear the same outfit.
+	-- Clothing ids are the template images, not the catalog items: the catalog
+	-- ids (shirt 109136171567622, pants 117151610616130) don't render from a script.
+	["Test Subject"] = {
+		Clothing = {
+			Shirt = 74978626804949,
+			Pants = 124324185259022,
+		},
+		RemoveAvatarAccessories = false,
+	},
+
 	["108th Infantry Regiment"] = applyRankTabSettings({
 		Folder = "108th",
 		GroupId = 6075919,
