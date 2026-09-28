@@ -33,7 +33,7 @@ CovertConfig.Tools = {
 -- transparent background: Color tints the image, and a black image stays black.
 -- Size is in pixels, up to 24 (the row is 26 tall).
 CovertConfig.ModeratorIcon = {
-	Image = "rbxassetid://92453895448695",
+	Image = "rbxassetid://139048928484649",
 	Color = Color3.fromRGB(255, 255, 255),
 	Size = 24,
 }
