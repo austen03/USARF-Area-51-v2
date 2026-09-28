@@ -20,7 +20,7 @@ CovertConfig.BlockedHomeTeams = {
 -- Subject"]). Unlike regular Test Subjects, their avatar accessories are removed
 -- so they don't give the player away.
 CovertConfig.Outfit = {
-	RemoveAvatarAccessories = true,
+	RemoveAvatarAccessories = false,
 }
 
 -- Tools given on top of the Test Subject loadout.
