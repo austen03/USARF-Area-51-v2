@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local TextService = game:GetService("TextService")
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local Config = USARF:WaitForChild("Config")
@@ -73,6 +74,21 @@ local function sanitizeText(text)
 	end
 
 	return text
+end
+
+-- Runs player-typed radio text through Roblox's filter (required for text other players see).
+-- Yields. Returns nil if the filter can't be reached, so callers never fall back to raw text.
+local function filterText(text, userId)
+	local success, result = pcall(function()
+		local filtered = TextService:FilterStringAsync(text, userId, Enum.TextFilterContext.PublicChat)
+		return filtered:GetNonChatStringForBroadcastAsync()
+	end)
+
+	if not success or typeof(result) ~= "string" then
+		return nil
+	end
+
+	return result
 end
 
 local function normalizeDuplicateText(text)
@@ -395,6 +411,7 @@ local function auditRadioMessage(packet, sender)
 	end)
 end
 
+-- Yields: player messages are filtered through TextService before being sent.
 function RadioService.Send(channelKey, sender, text)
 	channelKey = tostring(channelKey or "")
 	text = sanitizeText(text)
@@ -415,6 +432,18 @@ function RadioService.Send(channelKey, sender, text)
 
 	if not cooldownOk then
 		return false, cooldownReason
+	end
+
+	-- Cooldown/duplicate checks above use the original text; the buffer, logs and
+	-- broadcast below only ever see the filtered text.
+	if typeof(sender) == "Instance" and sender:IsA("Player") then
+		local filtered = filterText(text, sender.UserId)
+
+		if not filtered then
+			return false, "Filter unavailable"
+		end
+
+		text = filtered
 	end
 
 	local packet = formatPacket(channelKey, sender, text, false)
