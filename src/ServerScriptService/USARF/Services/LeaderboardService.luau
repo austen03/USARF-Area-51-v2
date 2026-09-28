@@ -233,6 +233,7 @@ local function getShownIdentity(viewer, player)
 			image = icon.Image,
 			color = colorToTable(icon.Color),
 			size = icon.Size,
+			rowSize = icon.Size,
 		})
 	end
 
