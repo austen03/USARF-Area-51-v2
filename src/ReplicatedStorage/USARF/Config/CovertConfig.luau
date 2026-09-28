@@ -31,7 +31,7 @@ CovertConfig.Tools = {
 
 -- Leaderboard icon moderators see on covert players. TODO: set the image asset id.
 CovertConfig.ModeratorIcon = {
-	Image = "rbxassetid://0",
+	Image = "rbxassetid://107233341981110",
 	Color = Color3.fromRGB(255, 255, 255),
 	Size = 22,
 }
