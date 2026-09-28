@@ -176,12 +176,19 @@ local function formatCommandDetails(command)
 		table.insert(lines, "Arguments:")
 
 		for _, arg in ipairs(command.args) do
+			-- Dynamic arguments are functions whose shape depends on earlier arguments.
+			if type(arg) ~= "table" then
+				table.insert(lines, "  ... - depends on the previous arguments")
+				continue
+			end
+
 			local optional = arg.Optional and "optional" or "required"
+			local argType = if type(arg.Type) == "table" then arg.Type.DisplayName else arg.Type
 
 			table.insert(lines, string.format(
 				"  %s <%s> - %s (%s)",
 				tostring(arg.Name or "Argument"),
-				tostring(arg.Type or "any"),
+				tostring(argType or "any"),
 				tostring(arg.Description or "No description."),
 				optional
 				))

@@ -17,6 +17,8 @@ local EconomyAnalyticsService = require(Services.EconomyAnalyticsService)
 
 local DEFAULT_DAILY_REWARD = {
 	CooldownSeconds = 86400,
+	-- If this much time passes since the last claim, the streak is lost and resets to Day 1.
+	StreakResetSeconds = 172800,
 	Rewards = {
 		[1] = { Cash = 250, Gold = 0 },
 		[2] = { Cash = 500, Gold = 0 },
@@ -29,7 +31,10 @@ local DEFAULT_DAILY_REWARD = {
 }
 
 EconomyConfig.DailyReward = EconomyConfig.DailyReward or DEFAULT_DAILY_REWARD
-EconomyConfig.DailyReward.CooldownSeconds = EconomyConfig.DailyReward.CooldownSeconds or DEFAULT_DAILY_REWARD.CooldownSeconds
+EconomyConfig.DailyReward.CooldownSeconds = EconomyConfig.DailyReward.CooldownSeconds
+	or DEFAULT_DAILY_REWARD.CooldownSeconds
+EconomyConfig.DailyReward.StreakResetSeconds = EconomyConfig.DailyReward.StreakResetSeconds
+	or DEFAULT_DAILY_REWARD.StreakResetSeconds
 EconomyConfig.DailyReward.Rewards = EconomyConfig.DailyReward.Rewards or DEFAULT_DAILY_REWARD.Rewards
 
 if #EconomyConfig.DailyReward.Rewards == 0 then
@@ -142,10 +147,19 @@ function DailyRewardService.GetStatus(player)
 	local now = os.time()
 	local cooldown = tonumber(EconomyConfig.DailyReward.CooldownSeconds) or DEFAULT_DAILY_REWARD.CooldownSeconds
 
-	local remaining = math.max(0, cooldown - (now - data.LastClaim))
+	local streakReset = tonumber(EconomyConfig.DailyReward.StreakResetSeconds) or (cooldown * 2)
+
+	local elapsed = now - data.LastClaim
+	local remaining = math.max(0, cooldown - elapsed)
 	local canClaim = remaining <= 0
 
-	local nextDay = data.Streak + 1
+	-- Missed a day: the streak no longer carries over.
+	local streak = data.Streak
+	if data.LastClaim > 0 and elapsed >= streakReset then
+		streak = 0
+	end
+
+	local nextDay = streak + 1
 	if nextDay > 7 then
 		nextDay = 1
 	end
@@ -153,7 +167,7 @@ function DailyRewardService.GetStatus(player)
 	return {
 		CanClaim = canClaim,
 		Remaining = remaining,
-		Streak = data.Streak,
+		Streak = streak,
 		NextDay = nextDay,
 		Reward = EconomyConfig.DailyReward.Rewards[nextDay] or DEFAULT_DAILY_REWARD.Rewards[nextDay],
 		Rewards = EconomyConfig.DailyReward.Rewards,
@@ -191,38 +205,21 @@ function DailyRewardService.Claim(player)
 		return false, "Missing reward config"
 	end
 
-	data.Streak += 1
-
-	if data.Streak > 7 then
-		data.Streak = 1
-	end
-
+	data.Streak = status.NextDay
 	data.LastClaim = os.time()
 
 	if reward.Cash and reward.Cash > 0 then
-		CurrencyService.Add(
-			player,
-			"Cash",
-			reward.Cash,
-			EconomyConfig.TransactionActions.DailyReward,
-			{
-				Day = data.Streak,
-			}
-		)
+		CurrencyService.Add(player, "Cash", reward.Cash, EconomyConfig.TransactionActions.DailyReward, {
+			Day = data.Streak,
+		})
 
 		EconomyAnalyticsService.IncrementCashGenerated(reward.Cash)
 	end
 
 	if reward.Gold and reward.Gold > 0 then
-		CurrencyService.Add(
-			player,
-			"Gold",
-			reward.Gold,
-			EconomyConfig.TransactionActions.DailyReward,
-			{
-				Day = data.Streak,
-			}
-		)
+		CurrencyService.Add(player, "Gold", reward.Gold, EconomyConfig.TransactionActions.DailyReward, {
+			Day = data.Streak,
+		})
 
 		EconomyAnalyticsService.IncrementGoldGenerated(reward.Gold)
 	end
