@@ -6,6 +6,7 @@ local USARFStorage = ReplicatedStorage:WaitForChild("USARF")
 local ConfigFolder = USARFStorage:WaitForChild("Config")
 local UniformConfig = require(ConfigFolder:WaitForChild("UniformConfig"))
 local CovertConfig = require(ConfigFolder:WaitForChild("CovertConfig"))
+local USARFConfig = require(ConfigFolder:WaitForChild("USARFConfig"))
 local UniformLoadoutIndex = require(USARFStorage:WaitForChild("Shared"):WaitForChild("UniformLoadoutIndex"))
 
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -1711,23 +1712,17 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 
 	-- Restore the player's canonical Roblox avatar before deciding whether the
 	-- newly selected team needs a uniform. This gives unconfigured teams, such
-	-- as Test Subject, their original clothing and accessories back.
+	-- as PMC, their original clothing and accessories back.
 	restoreOriginalAppearance(player, character)
 
-	-- Covert players wear the Test Subject outfit so their own avatar doesn't give them away.
+	-- Covert players wear the Test Subject team's outfit, without loadout overrides
+	-- and (by default) without their avatar accessories, so they aren't recognised.
 	if CovertState.IsCovert(player) then
-		local outfit = CovertConfig.Outfit
-		local shirt = tonumber(outfit.Shirt) or 0
-		local pants = tonumber(outfit.Pants) or 0
+		local testSubjectTeam = USARFConfig.Teams[CovertConfig.TeamKey]
+		local outfit = shallowCopy(testSubjectTeam and getTeamConfigs()[testSubjectTeam.teamName])
 
-		UniformService.ApplyUniformToCharacter(character, {
-			Clothing = {
-				Shirt = if shirt > 0 then shirt else nil,
-				Pants = if pants > 0 then pants else nil,
-			},
-			RemoveExistingClothing = shirt > 0 or pants > 0,
-			RemoveAvatarAccessories = outfit.RemoveAvatarAccessories ~= false,
-		})
+		outfit.RemoveAvatarAccessories = CovertConfig.Outfit.RemoveAvatarAccessories ~= false
+		UniformService.ApplyUniformToCharacter(character, outfit)
 
 		return
 	end
@@ -1756,7 +1751,13 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		then findMorphIn(getDivisionSubClassFolder(divisionName), loadout.SubClass)
 		else nil
 
-	if not morphModel and not subClassMorph then
+	-- Teams with no morph folder (e.g. Test Subject) can still set clothing.
+	local clothingOnly = not morphModel
+		and typeof(teamConfig) == "table"
+		and teamConfig.Clothing ~= nil
+		and getDivisionFolderName(teamConfig) == nil
+
+	if not morphModel and not subClassMorph and not clothingOnly then
 		return
 	end
 
@@ -1787,6 +1788,20 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		character:SetAttribute("USARFUniformApplied", true)
 		character:SetAttribute("USARFUniformMorph", morphModel.Name)
 		character:SetAttribute("USARFUniformVariant", teamConfig.ActiveVariantName)
+	elseif clothingOnly then
+		if configValue(teamConfig, "RemoveExistingClothing", true) then
+			removeExistingClothing(character)
+		end
+
+		if configValue(teamConfig, "RemoveAvatarAccessories", true) then
+			removeAvatarAccessories(character)
+		end
+
+		local noMorph = Instance.new("Folder")
+		applyClothing(character, noMorph, teamConfig)
+		noMorph:Destroy()
+
+		character:SetAttribute("USARFUniformApplied", true)
 	end
 
 	if subClassMorph then

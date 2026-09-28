@@ -16,11 +16,10 @@ CovertConfig.BlockedHomeTeams = {
 	PMC = true,
 }
 
--- Test Subject outfit worn while covert, so the player's own avatar doesn't give
--- them away. TODO: set the shirt and pants asset ids.
+-- Covert players wear the Test Subject team's outfit (UniformConfig.Teams["Test
+-- Subject"]). Unlike regular Test Subjects, their avatar accessories are removed
+-- so they don't give the player away.
 CovertConfig.Outfit = {
-	Shirt = 0,
-	Pants = 0,
 	RemoveAvatarAccessories = true,
 }
 
