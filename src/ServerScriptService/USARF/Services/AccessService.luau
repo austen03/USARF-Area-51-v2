@@ -1,10 +1,12 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Teams = game:GetService("Teams")
 
 local AccessService = {}
 
 local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
 local GamepassService = require(Services:WaitForChild("GamepassService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local USARFConfig = require(USARF.Config:WaitForChild("USARFConfig"))
@@ -40,9 +42,24 @@ local function listContains(list, value)
 	return false
 end
 
+-- A covert player is a Test Subject for doors unless they have switched their
+-- clearance back on; then doors treat them as their home team.
+local function getCovertHomeTeamKey(player)
+	if CovertState.HasClearance(player) then
+		return CovertState.GetHomeTeamKey(player)
+	end
+
+	return nil
+end
+
 local function getTeamKey(player)
 	if not player then
 		return nil
+	end
+
+	local covertHomeKey = getCovertHomeTeamKey(player)
+	if covertHomeKey then
+		return covertHomeKey
 	end
 
 	local key = player:GetAttribute("USARF_TeamKey")
@@ -103,11 +120,23 @@ end
 local function getDoorTags(player)
 	local tags = {}
 
-	if not player or not player.Team then
+	if not player then
 		return tags
 	end
 
-	for attributeName, value in pairs(player.Team:GetAttributes()) do
+	local team = player.Team
+	local covertHomeKey = getCovertHomeTeamKey(player)
+
+	if covertHomeKey then
+		local homeTeamData = USARFConfig.Teams and USARFConfig.Teams[covertHomeKey]
+		team = homeTeamData and Teams:FindFirstChild(homeTeamData.teamName)
+	end
+
+	if not team then
+		return tags
+	end
+
+	for attributeName, value in pairs(team:GetAttributes()) do
 		if string.sub(attributeName, 1, 4) == "door" and value == true then
 			tags[attributeName] = true
 		end

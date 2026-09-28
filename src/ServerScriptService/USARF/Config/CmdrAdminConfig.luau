@@ -781,6 +781,15 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
+	certs = {
+		MainServerLevel = "Moderator",
+		DisplayGroup = "Moderator",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = false,
+		CaseId = false,
+	},
+
 	fly = {
 		MainServerLevel = "Developer",
 		DisplayGroup = "Developer",

@@ -1,10 +1,13 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local Config = USARF:WaitForChild("Config")
 
 local USARFConfig = require(Config:WaitForChild("USARFConfig"))
+
+local CovertState = require(ServerScriptService:WaitForChild("USARF"):WaitForChild("Services"):WaitForChild("CovertState"))
 
 local PermissionService = {}
 
@@ -255,6 +258,11 @@ function PermissionService.GetTeamKey(player)
 	end
 
 	return USARFConfig.GetTeamKeyFromName(player.Team.Name)
+end
+
+-- Covert players keep their home team's radio while playing as a Test Subject.
+local function getRadioTeamKey(player)
+	return CovertState.GetHomeTeamKey(player) or PermissionService.GetTeamKey(player)
 end
 
 function PermissionService.GetTeam(playerOrTeamKey)
@@ -534,7 +542,7 @@ function PermissionService.HasRadio(player)
 		return true
 	end
 
-	local teamKey = PermissionService.GetTeamKey(player)
+	local teamKey = getRadioTeamKey(player)
 
 	if not teamKey then
 		return false
@@ -562,7 +570,7 @@ function PermissionService.CanReadRadioChannel(player, channelKey)
 
 	local mainRank = PermissionService.GetMainRank(player)
 	local modRank = PermissionService.GetModRank(player)
-	local teamKey = PermissionService.GetTeamKey(player)
+	local teamKey = getRadioTeamKey(player)
 
 	for _, channel in ipairs(USARFConfig.Radio.Channels) do
 		if channel.key == channelKey then

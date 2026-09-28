@@ -107,6 +107,13 @@ local devModeIcon = Icon.new()
 	:setOrder(6)
 	:autoDeselect(false)
 
+local covertIcon = Icon.new()
+	:setName("USARF_Covert")
+	:setLabel("Covert")
+	:setCaption("Covert Operations")
+	:setOrder(7)
+	:autoDeselect(false)
+
 local menuIcon = Icon.new()
 	:setName("USARF_Menu")
 	:setLabel("Menu")
@@ -146,6 +153,12 @@ local function updateTopbarVisibility()
 	devModeIcon:setEnabled(
 		not hidden
 			and Player:GetAttribute("USARF_DevMode") == true
+	)
+
+	-- Set by CovertController once the server confirms the Covert certification.
+	covertIcon:setEnabled(
+		not hidden
+			and _G.USARFCovertCertified == true
 	)
 
 	menuIcon:setEnabled(not hidden)
@@ -214,6 +227,11 @@ end)
 devModeIcon.selected:Connect(function()
 	safeCall("USARFToggleDeveloperDiagnostics")
 	devModeIcon:deselect()
+end)
+
+covertIcon.selected:Connect(function()
+	safeCall("USARFToggleCovert")
+	covertIcon:deselect()
 end)
 
 menuIcon.selected:Connect(function()

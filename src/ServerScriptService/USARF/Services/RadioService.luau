@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local Teams = game:GetService("Teams")
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local Config = USARF:WaitForChild("Config")
@@ -17,6 +18,7 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local RadioAccessService = require(Services:WaitForChild("RadioAccessService"))
+local CovertState = require(Services:WaitForChild("CovertState"))
 
 local RadioLogService = nil
 pcall(function()
@@ -127,6 +129,12 @@ local function getTeamKey(player)
 		return nil
 	end
 
+	-- Covert players transmit as their home team, under their real username.
+	local covertHomeKey = CovertState.GetHomeTeamKey(player)
+	if covertHomeKey then
+		return covertHomeKey
+	end
+
 	local attrTeamKey = player:GetAttribute("USARF_TeamKey")
 	if attrTeamKey and USARFConfig.Teams[attrTeamKey] then
 		return attrTeamKey
@@ -231,9 +239,15 @@ local function getTeamInfo(player)
 	local teamName = "System"
 	local teamColor = Color3.fromRGB(170, 170, 170)
 
-	if player and player.Team then
-		teamName = player.Team.Name
-		teamColor = player.Team.TeamColor.Color
+	local team = player and player.Team
+
+	if CovertState.IsCovert(player) and teamData then
+		team = Teams:FindFirstChild(teamData.teamName) or team
+	end
+
+	if team then
+		teamName = team.Name
+		teamColor = team.TeamColor.Color
 	end
 
 	if teamData then

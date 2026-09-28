@@ -1240,6 +1240,21 @@ local function findClanByTag(tag)
 	return loadClan(clanId, true)
 end
 
+-- Clan summaries (Id, Name, Tag, LogoId, ColorId, ...) matching a name/tag search.
+function ClanService.ListClans(search)
+	return Actions.ListClans(nil, { Search = search }).Clans
+end
+
+function ClanService.GetClanSummary(clanId)
+	for _, summary in ipairs(loadIndex()) do
+		if summary.Id == clanId then
+			return summary
+		end
+	end
+
+	return nil
+end
+
 function ClanService.StaffDelete(tag, staffName)
 	local clan = findClanByTag(tag)
 
