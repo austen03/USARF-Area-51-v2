@@ -19,8 +19,8 @@ CovertConfig.BlockedHomeTeams = {
 -- Test Subject outfit worn while covert, so the player's own avatar doesn't give
 -- them away. TODO: set the shirt and pants asset ids.
 CovertConfig.Outfit = {
-	Shirt = 0,
-	Pants = 0,
+	Shirt = 109136171567622,
+	Pants = 117151610616130,
 	RemoveAvatarAccessories = true,
 }
 
