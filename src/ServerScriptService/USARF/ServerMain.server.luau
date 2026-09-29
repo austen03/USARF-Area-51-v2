@@ -127,6 +127,7 @@ startService("MedicalTreatmentService")
 startService("WeaponService")
 startService("WeaponTestService")
 startService("GlassService")
+startService("EntityControllerService")
 
 --// Controllers
 require(Controllers:WaitForChild("TeamController"))
