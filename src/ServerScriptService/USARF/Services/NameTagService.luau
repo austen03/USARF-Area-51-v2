@@ -50,7 +50,8 @@ local ATTR_COLOR_OVERRIDE = "USARF_NameTagColorOverride"
 
 -- Nametag badges (Nitro, Veteran, Distinguished Service, Honor). Medals/ribbons live on the
 -- separate "medals" tab and are handled by RibbonRackService.
-local BADGE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=badges"
+local BADGE_SHEET_URL =
+	"https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=badges"
 
 local DEPARTMENT_RANK_SHEET_URLS = {
 	EngineeringTechnical = "",
@@ -79,7 +80,9 @@ local ICONS = {
 	POTUSVPOTUS = { image = "rbxassetid://89415346353784", color = Color3.fromRGB(255, 220, 110), size = 34 },
 	Moderator = { image = "rbxassetid://117579984124201", color = Color3.fromRGB(200, 200, 200), size = 34 },
 	Developer = { image = "rbxassetid://134245549400974", color = Color3.fromRGB(200, 200, 200), size = 34 },
-	Premium = { image = "rbxassetid://84150610905380", color = Color3.fromRGB(255, 255, 255), size = 34 },
+	Contributor = { image = "rbxassetid://70735353003643", color = Color3.fromRGB(200, 200, 200), size = 34 },
+	QA = { image = "rbxassetid://123147015382998", color = Color3.fromRGB(200, 200, 200), size = 30 },
+	Premium = { image = "rbxassetid://84150610905380", color = Color3.fromRGB(200, 200, 200), size = 34 },
 	Cabinet = { image = "rbxassetid://138524796226557", color = Color3.fromRGB(220, 220, 220), size = 34 },
 	Honor = { image = "rbxassetid://132007801726670", color = Color3.fromRGB(235, 235, 235), size = 20 },
 	DistinguishedService = { image = "rbxassetid://107997180162683", color = Color3.fromRGB(255, 210, 80), size = 34 },
@@ -93,7 +96,9 @@ local ICON_PRIORITY = {
 	"Owner",
 	"Verified",
 	"Developer",
+	"Contributor",
 	"Moderator",
+	"QA",
 	"POTUSVPOTUS",
 	"ExecutiveLeadership",
 	"Cabinet",
@@ -288,6 +293,10 @@ local function fetchBadgeSheetCache()
 					sheetBadges.DistinguishedService = true
 				elseif key == "honor" or key == "honorable" then
 					sheetBadges.Honor = true
+				elseif key == "contributor" then
+					sheetBadges.Contributor = true
+				elseif key == "qa" or key == "qualityassurance" then
+					sheetBadges.QA = true
 				end
 			end
 
@@ -401,7 +410,9 @@ local function getShownClan(player)
 		return if org then org.Tag else nil, if org then org.Logo else nil, if org then org.Color else nil
 	end
 
-	return player:GetAttribute("USARF_ClanTag"), player:GetAttribute("USARF_ClanLogo"), player:GetAttribute("USARF_ClanColor")
+	return player:GetAttribute("USARF_ClanTag"),
+		player:GetAttribute("USARF_ClanLogo"),
+		player:GetAttribute("USARF_ClanColor")
 end
 
 -- Clan tag and logo only show on the Test Subject name tag.
@@ -684,6 +695,14 @@ local function getBadgeMap(player)
 		if sheetBadges.Honor then
 			badges.Honor = true
 		end
+
+		if sheetBadges.Contributor then
+			badges.Contributor = true
+		end
+
+		if sheetBadges.QA then
+			badges.QA = true
+		end
 	end
 
 	return badges
@@ -874,18 +893,54 @@ local function buildSpecialDisplay(player, goldMode)
 			return {
 				mode = "TestSubject",
 				lines = {
-					{ name = "StatusLabel", text = "[TERMINATE]", height = 22, color = Color3.fromRGB(255, 45, 45), order = 2 },
-					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(255, 55, 55), order = 3 },
-					{ name = "UsernameLabel", text = clanPrefix .. getShownName(player), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{
+						name = "StatusLabel",
+						text = "[TERMINATE]",
+						height = 22,
+						color = Color3.fromRGB(255, 45, 45),
+						order = 2,
+					},
+					{
+						name = "SubjectNumberLabel",
+						text = subjectNumber,
+						height = 20,
+						color = Color3.fromRGB(255, 55, 55),
+						order = 3,
+					},
+					{
+						name = "UsernameLabel",
+						text = clanPrefix .. getShownName(player),
+						height = 18,
+						color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255),
+						order = 4,
+					},
 				},
 			}
 		elseif status == "AUTHORIZED" then
 			return {
 				mode = "TestSubject",
 				lines = {
-					{ name = "StatusLabel", text = "[AUTHORIZED]", height = 22, color = Color3.fromRGB(90, 255, 115), order = 2 },
-					{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = Color3.fromRGB(90, 255, 115), order = 3 },
-					{ name = "UsernameLabel", text = clanPrefix .. getShownName(player), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 4 },
+					{
+						name = "StatusLabel",
+						text = "[AUTHORIZED]",
+						height = 22,
+						color = Color3.fromRGB(90, 255, 115),
+						order = 2,
+					},
+					{
+						name = "SubjectNumberLabel",
+						text = subjectNumber,
+						height = 20,
+						color = Color3.fromRGB(90, 255, 115),
+						order = 3,
+					},
+					{
+						name = "UsernameLabel",
+						text = clanPrefix .. getShownName(player),
+						height = 18,
+						color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255),
+						order = 4,
+					},
 				},
 			}
 		end
@@ -893,8 +948,21 @@ local function buildSpecialDisplay(player, goldMode)
 		return {
 			mode = "TestSubject",
 			lines = {
-				{ name = "SubjectNumberLabel", text = subjectNumber, height = 20, color = goldMode and GOLD_COLOR or Color3.fromRGB(220, 220, 60), order = 2 },
-				{ name = "UsernameLabel", text = clanPrefix .. (goldMode and ("★ " .. getShownName(player) .. " ★") or getShownName(player)), height = 18, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255), order = 3 },
+				{
+					name = "SubjectNumberLabel",
+					text = subjectNumber,
+					height = 20,
+					color = goldMode and GOLD_COLOR or Color3.fromRGB(220, 220, 60),
+					order = 2,
+				},
+				{
+					name = "UsernameLabel",
+					text = clanPrefix
+						.. (goldMode and ("★ " .. getShownName(player) .. " ★") or getShownName(player)),
+					height = 18,
+					color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 255, 255),
+					order = 3,
+				},
 			},
 		}
 	end
@@ -903,8 +971,20 @@ local function buildSpecialDisplay(player, goldMode)
 		return {
 			mode = "PMC",
 			lines = {
-				{ name = "HostileLabel", text = "[HOSTILE]", height = 22, color = Color3.fromRGB(255, 65, 65), order = 2 },
-				{ name = "ContractorLabel", text = goldMode and ("Contractor ★ " .. player.Name .. " ★") or ("Contractor " .. player.Name), height = 20, color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 190, 80), order = 3 },
+				{
+					name = "HostileLabel",
+					text = "[HOSTILE]",
+					height = 22,
+					color = Color3.fromRGB(255, 65, 65),
+					order = 2,
+				},
+				{
+					name = "ContractorLabel",
+					text = goldMode and ("Contractor ★ " .. player.Name .. " ★") or ("Contractor " .. player.Name),
+					height = 20,
+					color = goldMode and GOLD_SOFT_COLOR or Color3.fromRGB(255, 190, 80),
+					order = 3,
+				},
 			},
 		}
 	end
@@ -1021,17 +1101,11 @@ function NameTagService.Apply(player)
 
 	local identityColor = forcedColor
 		or (
-			goldMode
-			and GOLD_SOFT_COLOR
-			or (
-				hasCustomTitle
-				and Color3.fromRGB(255, 255, 255)
-				or Color3.fromRGB(230, 230, 230)
-			)
+			goldMode and GOLD_SOFT_COLOR
+			or (hasCustomTitle and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(230, 230, 230))
 		)
 
-	local clearanceColor = forcedColor
-		or (goldMode and GOLD_COLOR or Color3.fromRGB(120, 205, 255))
+	local clearanceColor = forcedColor or (goldMode and GOLD_COLOR or Color3.fromRGB(120, 205, 255))
 
 	createTextLabel(container, "IdentityLabel", identityLine, 16, identityColor, 3, goldMode)
 	createTextLabel(container, "ClearanceRankLabel", clearanceRankLine, 20, clearanceColor, 4, goldMode)
@@ -1201,7 +1275,8 @@ function NameTagService.ResolveTeamForOverride(player, teamText)
 		local displayName = teamData.displayName or teamData.teamName or teamKey
 		local teamName = teamData.teamName or displayName
 
-		if normalizeKey(teamKey) == wanted
+		if
+			normalizeKey(teamKey) == wanted
 			or normalizeKey(displayName) == wanted
 			or normalizeKey(teamName) == wanted
 		then

@@ -9,10 +9,7 @@ local ConfigFolder = USARFServer:WaitForChild("Config")
 local CmdrAdminConfig = require(ConfigFolder:WaitForChild("CmdrAdminConfig"))
 
 -- Register the permission hook first so it is always active, even if anything below errors.
-Cmdr.Registry:RegisterHook(
-	"BeforeRun",
-	require(CmdrFolder:WaitForChild("Hooks"):WaitForChild("BeforeRun"))
-)
+Cmdr.Registry:RegisterHook("BeforeRun", require(CmdrFolder:WaitForChild("Hooks"):WaitForChild("BeforeRun")))
 
 -- Default Cmdr commands disabled.
 -- Cmdr:RegisterDefaultCommands()
@@ -20,7 +17,6 @@ Cmdr.Registry:RegisterHook(
 -- Cmdr 1.13: call methods on Cmdr.Registry directly (Cmdr:Method() still works but prints a deprecation warning).
 Cmdr.Registry:RegisterTypesIn(CmdrFolder:WaitForChild("Types"))
 Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("Commands"))
-Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("ClanCommands"))
 
 local function normalizeCommandName(name)
 	return string.lower(tostring(name or ""))
@@ -35,8 +31,7 @@ local function getDisplayGroup(commandName)
 	end
 
 	if commandConfig and commandConfig.MainServerLevel then
-		return CmdrAdminConfig.DisplayGroups[commandConfig.MainServerLevel]
-			or commandConfig.MainServerLevel
+		return CmdrAdminConfig.DisplayGroups[commandConfig.MainServerLevel] or commandConfig.MainServerLevel
 	end
 
 	return "Moderator"
