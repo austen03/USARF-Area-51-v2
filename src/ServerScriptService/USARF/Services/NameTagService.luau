@@ -48,8 +48,6 @@ local ATTR_NAME_OVERRIDE = "USARF_NameTagNameOverride"
 local ATTR_RANK_OVERRIDE = "USARF_NameTagRankOverride"
 local ATTR_COLOR_OVERRIDE = "USARF_NameTagColorOverride"
 
--- Nametag badges (Nitro, Veteran, Distinguished Service, Honor). Medals/ribbons live on the
--- separate "medals" tab and are handled by RibbonRackService.
 local BADGE_SHEET_URL =
 	"https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=badges"
 
@@ -275,11 +273,9 @@ local function fetchBadgeSheetCache()
 
 		if userId then
 			local sheetBadges = {}
-			-- Matched ignoring case, spaces and ":" ("Badges:" works too).
-			-- "Awards" is kept because the sheet web app may rename the column to it.
+
 			local badgesText = tostring(getRowValue(row, {
 				"Badges",
-				"Awards",
 			}) or "")
 
 			for badge in string.gmatch(badgesText, "([^,]+)") do
@@ -400,8 +396,6 @@ local function isTestSubject(player)
 	return getTeamName(player) == "Test Subject" or player:GetAttribute("USARF_TeamKey") == "TestSubject"
 end
 
--- The clan a player shows: their covert org while covert (none unless they picked
--- one), otherwise the clan ClanService set on them.
 local function getShownClan(player)
 	local covert = CovertState.Get(player)
 
@@ -415,7 +409,6 @@ local function getShownClan(player)
 		player:GetAttribute("USARF_ClanColor")
 end
 
--- Clan tag and logo only show on the Test Subject name tag.
 local function getClanPrefix(player)
 	local tag = getShownClan(player)
 
@@ -445,7 +438,6 @@ local function isPMC(player)
 	return getTeamName(player) == "PMC" or player:GetAttribute("USARF_TeamKey") == "PMC"
 end
 
--- The name shown for a player: their covert name while covert.
 local function getShownName(player)
 	local covert = CovertState.Get(player)
 	return if covert then covert.Name else player.Name
@@ -517,7 +509,6 @@ local function playerOwnsGoldNametag(player)
 	return false
 end
 
--- Covert players toggle the gold stars themselves, whether or not they own them.
 local function isGoldMode(player)
 	local covert = CovertState.Get(player)
 
@@ -556,9 +547,6 @@ local function getCustomTitle(player)
 	local teamKey = player:GetAttribute("USARF_TeamKey")
 	local teamRankOverride = getTeamRankOverride(player, teamKey)
 
-	-- The rank command owns the primary rank/title position.
-	-- For special-title users, this replaces titles such as
-	-- "Federal Overseer" with the configured team override.
 	if teamRankOverride then
 		return teamRankOverride
 	end
@@ -709,7 +697,6 @@ local function getBadgeMap(player)
 end
 
 local function getIcons(player)
-	-- Staff and supporter badges would give a covert player away.
 	if CovertState.IsCovert(player) then
 		return {}
 	end
@@ -855,7 +842,6 @@ local function buildSpecialDisplay(player, goldMode)
 	local forcedRank = getRankOverride(player)
 	local forcedColor = getColorOverride(player)
 
-	-- editnametag overrides would replace the covert Test Subject tag.
 	if (forcedName or forcedRank or forcedColor) and not CovertState.IsCovert(player) then
 		local displayName = forcedName or player.Name
 
@@ -1165,7 +1151,6 @@ function NameTagService.PlayerHasGoldNametag(player)
 	return playerOwnsGoldNametag(player)
 end
 
--- The TS-##### number shown on a player's Test Subject tag.
 function NameTagService.GetTestSubjectNumber(player)
 	return getTestSubjectNumber(player)
 end

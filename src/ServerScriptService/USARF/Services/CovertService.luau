@@ -1,8 +1,3 @@
--- Covert mode: a certified player respawns as a Test Subject under a fake name,
--- while keeping their home team's radio (and, when they switch it on, its door
--- access). The state lives in CovertState; this service moves players in and
--- out, validates their choices and serves the covert panel and chat commands.
-
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -49,12 +44,10 @@ local MAX_ORG_SEARCH_LENGTH = 30
 
 local started = false
 
-local busy: {[Player]: boolean} = {}
--- Set while covert moves a player between teams, so that move isn't mistaken
--- for the player leaving the Test Subject team.
-local transitioning: {[Player]: boolean} = {}
-local lastToggleAt: {[Player]: number} = {}
-local lastActionAt: {[Player]: number} = {}
+local busy: { [Player]: boolean } = {}
+local transitioning: { [Player]: boolean } = {}
+local lastToggleAt: { [Player]: number } = {}
+local lastActionAt: { [Player]: number } = {}
 
 local function getOrCreateRemote(className: string, name: string): Instance
 	local remote = Remotes:FindFirstChild(name)
@@ -84,7 +77,7 @@ local function notify(player: Player, message: string, notificationType: string?
 	})
 end
 
-local function log(player: Player, action: string, message: string, metadata: {[string]: any}?)
+local function log(player: Player, action: string, message: string, metadata: { [string]: any }?)
 	AuditService.Log({
 		category = "Covert",
 		action = action,
@@ -95,8 +88,6 @@ local function log(player: Player, action: string, message: string, metadata: {[
 		metadata = metadata or {},
 	})
 end
-
---// Covert name log (Discord covert name logs channel, backed up to the sheet)
 
 local sheetToken = nil
 do
@@ -109,9 +100,7 @@ do
 	end
 end
 
--- Apps Script answers a POST with a redirect after running doPost, so a 3xx
--- still means the row was written.
-local function writeSheetRow(entry: {[string]: any})
+local function writeSheetRow(entry: { [string]: any })
 	local url = CovertLogConfig.SheetUrl
 	local requestUrl = if sheetToken then sheetToken:AddPrefix(url .. "&token=") else url
 	local body = HttpService:JSONEncode(entry)
@@ -131,14 +120,16 @@ local function writeSheetRow(entry: {[string]: any})
 		end
 
 		if attempt == CovertLogConfig.SheetMaxAttempts then
-			warn("[CovertService] Couldn't write covert name to the sheet:", if success then response.StatusCode else response)
+			warn(
+				"[CovertService] Couldn't write covert name to the sheet:",
+				if success then response.StatusCode else response
+			)
 		else
 			task.wait(2 * attempt)
 		end
 	end
 end
 
--- Records which account is behind a covert name, with the server it happened in.
 local function recordCovertName(player: Player, action: string, covertName: string, previousName: string?)
 	local entry = {
 		action = action,
@@ -178,13 +169,10 @@ local function pushState(player: Player, openPanel: boolean?)
 	end
 end
 
---// Validation
-
 local function trim(text: string): string
 	return (string.gsub(string.gsub(text, "^%s+", ""), "%s+$", ""))
 end
 
--- Returns the cleaned name, or nil and a reason. Yields (text filter).
 local function validateName(player: Player, rawName: any): (string?, string?)
 	if typeof(rawName) ~= "string" then
 		return nil, "Enter a name."
@@ -217,7 +205,6 @@ local function validateName(player: Player, rawName: any): (string?, string?)
 		end
 	end
 
-	-- Names are shown to everyone, so they go through Roblox's text filter.
 	local success, filtered = pcall(function()
 		local result = TextService:FilterStringAsync(name, player.UserId, Enum.TextFilterContext.PublicChat)
 		return result:GetNonChatStringForBroadcastAsync()
@@ -234,8 +221,6 @@ local function validateName(player: Player, rawName: any): (string?, string?)
 	return name
 end
 
--- A random TS-##### that no one in the server is showing (including the
--- player's own normal number, which would give them away).
 local function randomSubjectNumber(): string
 	local used = {}
 
@@ -252,7 +237,6 @@ local function randomSubjectNumber(): string
 	return candidate
 end
 
--- Returns the org for a clan id (nil when the id is empty), or false and a reason.
 local function resolveOrg(orgId: any): (any, string?)
 	if orgId == nil or orgId == "" then
 		return nil
@@ -279,8 +263,6 @@ local function resolveOrg(orgId: any): (any, string?)
 	}
 end
 
---// Moving between teams
-
 local function giveTeleportGrace(player: Player)
 	if AntiExploitService and typeof(AntiExploitService.AuthorizeTeleport) == "function" then
 		AntiExploitService.AuthorizeTeleport(player, 8, "Covert")
@@ -290,7 +272,6 @@ local function giveTeleportGrace(player: Player)
 	player:SetAttribute("USARF_TeleportGraceReason", "Covert")
 end
 
--- Respawns the player on a team, the same way the refresh command does.
 local function respawnOnTeam(player: Player, teamKey: string): (boolean, string?)
 	local teamData = USARFConfig.Teams[teamKey]
 
@@ -328,20 +309,18 @@ local function respawnOnTeam(player: Player, teamKey: string): (boolean, string?
 	return success, message
 end
 
---// Actions
-
-function CovertService.Enter(player: Player, request: {[string]: any}): (boolean, string?)
+function CovertService.Enter(player: Player, request: { [string]: any }): (boolean, string?)
 	if not isCertified(player) then
-		return false, "You are not certified for covert operations."
+		return false, "You are not certified for undercover operations."
 	end
 
 	if CovertState.IsCovert(player) then
-		return false, "You are already covert."
+		return false, "You are already undercover."
 	end
 
 	local cooldown = CovertConfig.ToggleCooldownSeconds
 	if lastToggleAt[player] and os.clock() - lastToggleAt[player] < cooldown then
-		return false, "Wait a moment before going covert again."
+		return false, "Wait a moment before going undercover again."
 	end
 
 	local homeKey = player:GetAttribute("USARF_TeamKey")
@@ -366,7 +345,6 @@ function CovertService.Enter(player: Player, request: {[string]: any}): (boolean
 		return false, access.reason or "The Test Subject team is unavailable."
 	end
 
-	-- Set before the move so uniforms, loadouts and nametags see the covert player.
 	CovertState.Set(player, {
 		HomeTeamKey = homeKey,
 		HomeTeamName = homeData.teamName,
@@ -382,27 +360,27 @@ function CovertService.Enter(player: Player, request: {[string]: any}): (boolean
 	if not moved then
 		CovertState.Set(player, nil)
 		respawnOnTeam(player, homeKey)
-		return false, `Couldn't go covert: {tostring(moveError)}`
+		return false, `Couldn't go undercover: {tostring(moveError)}`
 	end
 
 	lastToggleAt[player] = os.clock()
-	log(player, "Enter", `{player.Name} went covert as {name}.`, { homeTeam = homeKey, covertName = name })
+	log(player, "Enter", `{player.Name} went undercover as {name}.`, { homeTeam = homeKey, covertName = name })
 	recordCovertName(player, "Enter", name)
 
-	return true, `You are now covert as {name}.`
+	return true, `You are now undercover as {name}.`
 end
 
 function CovertService.Exit(player: Player, reason: string?): (boolean, string?)
 	local state = CovertState.Get(player)
 
 	if not state then
-		return false, "You are not covert."
+		return false, "You are not undercover."
 	end
 
 	CovertState.Set(player, nil)
 	lastToggleAt[player] = os.clock()
 
-	log(player, "Exit", `{player.Name} left covert ({reason or "requested"}).`, {
+	log(player, "Exit", `{player.Name} left undercover ({reason or "requested"}).`, {
 		homeTeam = state.HomeTeamKey,
 		covertName = state.Name,
 		reason = reason,
@@ -470,13 +448,13 @@ local function listOrgs(search: any)
 	return orgs
 end
 
-local function dispatch(player: Player, action: string, payload: {[string]: any}): (boolean, string?)
+local function dispatch(player: Player, action: string, payload: { [string]: any }): (boolean, string?)
 	if action == "Enter" then
 		return CovertService.Enter(player, payload)
 	elseif action == "Exit" then
 		return CovertService.Exit(player, "requested")
 	elseif not CovertState.IsCovert(player) then
-		return false, "Go covert first."
+		return false, "Go undercover first."
 	elseif action == "SetName" then
 		return setName(player, payload.Name)
 	elseif action == "SetOrg" then
@@ -519,7 +497,7 @@ local function handleRequest(player: Player, action: any, payload: any)
 	lastActionAt[player] = now
 
 	if not isCertified(player) then
-		return { Success = false, Message = "You are not certified for covert operations." }
+		return { Success = false, Message = "You are not certified for undercover operations." }
 	end
 
 	if action == "ListOrgs" then
@@ -544,16 +522,11 @@ local function handleRequest(player: Player, action: any, payload: any)
 	return { Success = success == true, Message = message, State = buildClientState(player) }
 end
 
---// Chat commands
-
--- Covert players keep their home team's radio (PermissionService/RadioService
--- read CovertState), so they use the normal radio UI to transmit.
 local function setupChatCommands()
 	local folder = Instance.new("Folder")
 	folder.Name = "USARFCovertCommands"
 	folder.Parent = TextChatService
 
-	-- /covert: opens the covert panel for certified players.
 	local panelCommand = Instance.new("TextChatCommand")
 	panelCommand.Name = "CovertPanel"
 	panelCommand.PrimaryAlias = CovertConfig.PanelCommand
@@ -568,10 +541,7 @@ local function setupChatCommands()
 	end)
 end
 
---// Lifecycle
-
 local function watchPlayer(player: Player)
-	-- Leaving the Test Subject team any other way (menu, team command) ends covert.
 	player:GetAttributeChangedSignal("USARF_TeamKey"):Connect(function()
 		if transitioning[player] or not CovertState.IsCovert(player) then
 			return
@@ -603,7 +573,6 @@ function CovertService.Start()
 		pushState(player)
 	end)
 
-	-- Certifications removed in Discord take effect in game.
 	CertificationService.Changed:Connect(function(player)
 		if CovertState.IsCovert(player) and not isCertified(player) and not busy[player] then
 			busy[player] = true

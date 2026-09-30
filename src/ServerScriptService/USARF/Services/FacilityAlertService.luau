@@ -61,16 +61,6 @@ local DEFAULT_ANNOUNCEMENTS = {
 		createdAt = os.time(),
 	},
 	{
-		id = "facility_access",
-		category = "Facility",
-		priority = "Normal",
-		title = "Facility Notice",
-		body = "Department access is controlled by Roblox group rank and active suspension status.",
-		date = "Access System",
-		sender = "System",
-		createdAt = os.time(),
-	},
-	{
 		id = "return_menu",
 		category = "Update",
 		priority = "Normal",

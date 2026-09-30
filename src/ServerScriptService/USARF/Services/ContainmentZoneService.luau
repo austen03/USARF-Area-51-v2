@@ -12,21 +12,15 @@ local TERMINATION_BLOCK_PATH = {
 	"TerminateBlock",
 }
 
--- The local axis perpendicular to the boundary plane.
--- X means the block's local left/right direction is the crossing direction.
 local CROSS_AXIS = "X"
 
--- 1 means positive local-axis space is the danger side.
--- -1 means negative local-axis space is the danger side.
 local DANGER_SIDE = 1
 
--- Adds extra valid coverage around the block.
 local HEIGHT_PADDING = 2
 local LENGTH_PADDING = 12
 
 local SPAWN_GRACE_SECONDS = 3
 
--- Prevents tiny positional jitter directly on the plane from triggering it.
 local CROSS_EPSILON = 0.08
 
 local SAFE_TEST_SUBJECT_TOOLS = {
@@ -69,8 +63,6 @@ local function configureTerminationBlock(block)
 		return
 	end
 
-	-- This part is only a mathematical boundary marker.
-	-- It must not interfere with players, tools, bullets, or raycasts.
 	block.Anchored = true
 	block.CanCollide = false
 	block.CanTouch = false
@@ -188,51 +180,27 @@ local function crossedSafeToDanger(previousLocalPosition, currentLocalPosition)
 		return false
 	end
 
-	local previousValue =
-		getCrossValue(previousLocalPosition) * DANGER_SIDE
+	local previousValue = getCrossValue(previousLocalPosition) * DANGER_SIDE
 
-	local currentValue =
-		getCrossValue(currentLocalPosition) * DANGER_SIDE
+	local currentValue = getCrossValue(currentLocalPosition) * DANGER_SIDE
 
-	return previousValue < -CROSS_EPSILON
-		and currentValue > CROSS_EPSILON
+	return previousValue < -CROSS_EPSILON and currentValue > CROSS_EPSILON
 end
 
-local function crossingWasInsideCoverage(
-	block,
-	previousLocalPosition,
-	currentLocalPosition
-)
-	-- Accept the crossing when either endpoint is within the doorway's
-	-- height/length coverage. This avoids missing fast movement where one
-	-- sample lands slightly before the doorway and the next slightly after it.
-	return isInsideBoundaryCoverage(
-		block,
-		previousLocalPosition
-	) or isInsideBoundaryCoverage(
-		block,
-		currentLocalPosition
-	)
+local function crossingWasInsideCoverage(block, previousLocalPosition, currentLocalPosition)
+	return isInsideBoundaryCoverage(block, previousLocalPosition)
+		or isInsideBoundaryCoverage(block, currentLocalPosition)
 end
 
 local function setTerminate(player, reason, force)
-	if player:GetAttribute("USARF_ContainmentStatus") == "AUTHORIZED"
-		and force ~= true
-	then
+	if player:GetAttribute("USARF_ContainmentStatus") == "AUTHORIZED" and force ~= true then
 		return
 	end
 
 	if player:GetAttribute("USARF_ContainmentStatus") ~= "TERMINATE" then
-		player:SetAttribute(
-			"USARF_ContainmentStatus",
-			"TERMINATE"
-		)
+		player:SetAttribute("USARF_ContainmentStatus", "TERMINATE")
 
-		debugPrint(
-			player.Name,
-			"marked TERMINATE",
-			reason or ""
-		)
+		debugPrint(player.Name, "marked TERMINATE", reason or "")
 	end
 end
 
@@ -247,10 +215,7 @@ end
 
 local function clearIfNotTestSubject(player)
 	if not isTestSubject(player) then
-		player:SetAttribute(
-			"USARF_ContainmentStatus",
-			nil
-		)
+		player:SetAttribute("USARF_ContainmentStatus", nil)
 	end
 end
 
@@ -266,16 +231,10 @@ local function scanPlayer(player, block)
 		return
 	end
 
-	local restrictedTool =
-		getEquippedRestrictedTool(player)
+	local restrictedTool = getEquippedRestrictedTool(player)
 
 	if restrictedTool then
-		setTerminate(
-			player,
-			"Restricted tool equipped: "
-				.. restrictedTool.Name,
-			true
-		)
+		setTerminate(player, "Restricted tool equipped: " .. restrictedTool.Name, true)
 
 		return
 	end
@@ -293,21 +252,12 @@ local function scanPlayer(player, block)
 		state = playerStates[player]
 	end
 
-	local currentLocalPosition =
-		block.CFrame:PointToObjectSpace(
-			root.Position
-		)
+	local currentLocalPosition = block.CFrame:PointToObjectSpace(root.Position)
 
-	local currentSide =
-		getSideFromLocalPosition(
-			currentLocalPosition
-		)
+	local currentSide = getSideFromLocalPosition(currentLocalPosition)
 
-	if os.clock() - state.spawnedAt
-		< SPAWN_GRACE_SECONDS
-	then
-		state.lastLocalPosition =
-			currentLocalPosition
+	if os.clock() - state.spawnedAt < SPAWN_GRACE_SECONDS then
+		state.lastLocalPosition = currentLocalPosition
 
 		state.lastSide = currentSide
 		return
@@ -315,40 +265,24 @@ local function scanPlayer(player, block)
 
 	if not state.armed then
 		state.armed = true
-		state.lastLocalPosition =
-			currentLocalPosition
+		state.lastLocalPosition = currentLocalPosition
 
 		state.lastSide = currentSide
 
-		debugPrint(
-			player.Name,
-			"armed on side:",
-			currentSide
-		)
+		debugPrint(player.Name, "armed on side:", currentSide)
 
 		return
 	end
 
-	if state.lastLocalPosition
-		and crossedSafeToDanger(
-			state.lastLocalPosition,
-			currentLocalPosition
-		)
-			and crossingWasInsideCoverage(
-				block,
-				state.lastLocalPosition,
-				currentLocalPosition
-			)
+	if
+		state.lastLocalPosition
+		and crossedSafeToDanger(state.lastLocalPosition, currentLocalPosition)
+		and crossingWasInsideCoverage(block, state.lastLocalPosition, currentLocalPosition)
 	then
-		setTerminate(
-			player,
-			"Crossed termination boundary",
-			false
-		)
+		setTerminate(player, "Crossed termination boundary", false)
 	end
 
-	state.lastLocalPosition =
-		currentLocalPosition
+	state.lastLocalPosition = currentLocalPosition
 
 	state.lastSide = currentSide
 end
@@ -359,29 +293,16 @@ local function setupCharacter(player, character)
 	resetPlayerState(player)
 
 	if isTestSubject(player) then
-		if player:GetAttribute(
-			"USARF_ContainmentStatus"
-			) == "TERMINATE"
-		then
-			player:SetAttribute(
-				"USARF_ContainmentStatus",
-				nil
-			)
+		if player:GetAttribute("USARF_ContainmentStatus") == "TERMINATE" then
+			player:SetAttribute("USARF_ContainmentStatus", nil)
 		end
 	else
 		clearIfNotTestSubject(player)
 	end
 
 	character.ChildAdded:Connect(function(child)
-		if isTestSubject(player)
-			and isRestrictedTool(child)
-		then
-			setTerminate(
-				player,
-				"Restricted tool equipped: "
-					.. child.Name,
-				true
-			)
+		if isTestSubject(player) and isRestrictedTool(child) then
+			setTerminate(player, "Restricted tool equipped: " .. child.Name, true)
 		end
 	end)
 end
@@ -392,22 +313,13 @@ local function handleTeamStateChanged(player)
 	resetPlayerState(player)
 
 	if not isTestSubject(player) then
-		player:SetAttribute(
-			"USARF_ContainmentStatus",
-			nil
-		)
+		player:SetAttribute("USARF_ContainmentStatus", nil)
 
 		return
 	end
 
-	if player:GetAttribute(
-		"USARF_ContainmentStatus"
-		) == "TERMINATE"
-	then
-		player:SetAttribute(
-			"USARF_ContainmentStatus",
-			nil
-		)
+	if player:GetAttribute("USARF_ContainmentStatus") == "TERMINATE" then
+		player:SetAttribute("USARF_ContainmentStatus", nil)
 	end
 end
 
@@ -418,24 +330,16 @@ local function setupPlayer(player)
 		setupCharacter(player, character)
 	end)
 
-	player:GetPropertyChangedSignal(
-		"Team"
-	):Connect(function()
+	player:GetPropertyChangedSignal("Team"):Connect(function()
 		handleTeamStateChanged(player)
 	end)
 
-	player:GetAttributeChangedSignal(
-		"USARF_TeamKey"
-	):Connect(function()
+	player:GetAttributeChangedSignal("USARF_TeamKey"):Connect(function()
 		handleTeamStateChanged(player)
 	end)
 
 	if player.Character then
-		task.spawn(
-			setupCharacter,
-			player,
-			player.Character
-		)
+		task.spawn(setupCharacter, player, player.Character)
 	end
 end
 
@@ -444,10 +348,7 @@ function ContainmentZoneService.Authorize(player)
 		return false
 	end
 
-	player:SetAttribute(
-		"USARF_ContainmentStatus",
-		"AUTHORIZED"
-	)
+	player:SetAttribute("USARF_ContainmentStatus", "AUTHORIZED")
 
 	return true
 end
@@ -457,10 +358,7 @@ function ContainmentZoneService.ClearStatus(player)
 		return false
 	end
 
-	player:SetAttribute(
-		"USARF_ContainmentStatus",
-		nil
-	)
+	player:SetAttribute("USARF_ContainmentStatus", nil)
 
 	resetPlayerState(player)
 
@@ -472,10 +370,7 @@ function ContainmentZoneService.MarkTerminate(player)
 		return false
 	end
 
-	player:SetAttribute(
-		"USARF_ContainmentStatus",
-		"TERMINATE"
-	)
+	player:SetAttribute("USARF_ContainmentStatus", "TERMINATE")
 
 	return true
 end
@@ -492,14 +387,10 @@ function ContainmentZoneService.Start()
 	if initialBlock then
 		configureTerminationBlock(initialBlock)
 	else
-		warn(
-			"[ContainmentZoneService] Missing termination block."
-		)
+		warn("[ContainmentZoneService] Missing termination block.")
 	end
 
-	for _, player in ipairs(
-		Players:GetPlayers()
-		) do
+	for _, player in ipairs(Players:GetPlayers()) do
 		setupPlayer(player)
 	end
 
@@ -513,45 +404,29 @@ function ContainmentZoneService.Start()
 		local warnedMissing = false
 
 		while started do
-			local block =
-				getTerminationBlock()
+			local block = getTerminationBlock()
 
 			if block then
 				warnedMissing = false
 
-				if configuredBlock ~= block
-					or block.CanQuery
-					or block.CanCollide
-					or block.CanTouch
-				then
-					configureTerminationBlock(
-						block
-					)
+				if configuredBlock ~= block or block.CanQuery or block.CanCollide or block.CanTouch then
+					configureTerminationBlock(block)
 				end
 
-				for _, player in ipairs(
-					Players:GetPlayers()
-					) do
-					scanPlayer(
-						player,
-						block
-					)
+				for _, player in ipairs(Players:GetPlayers()) do
+					scanPlayer(player, block)
 				end
 			elseif not warnedMissing then
 				warnedMissing = true
 
-				warn(
-					"[ContainmentZoneService] Missing termination block."
-				)
+				warn("[ContainmentZoneService] Missing termination block.")
 			end
 
 			task.wait(SCAN_INTERVAL)
 		end
 	end)
 
-	print(
-		"[ContainmentZoneService] Started"
-	)
+	print("[ContainmentZoneService] Started")
 end
 
 task.defer(function()

@@ -78,8 +78,6 @@ local function sanitizeText(text)
 	return text
 end
 
--- Runs player-typed radio text through Roblox's filter (required for text other players see).
--- Yields. Returns nil if the filter can't be reached, so callers never fall back to raw text.
 local function filterText(text, userId)
 	local success, result = pcall(function()
 		local filtered = TextService:FilterStringAsync(text, userId, Enum.TextFilterContext.PublicChat)
@@ -99,10 +97,7 @@ end
 
 local function isModMode(player)
 	return player
-		and (
-			player:GetAttribute("USARF_ModMode") == true
-			or player:GetAttribute("USARF_RadioModMode") == true
-		)
+		and (player:GetAttribute("USARF_ModMode") == true or player:GetAttribute("USARF_RadioModMode") == true)
 end
 
 local function isModeratorOrHigher(player)
@@ -113,11 +108,7 @@ local function isModeratorOrHigher(player)
 	local value = tonumber(player:GetAttribute("USARF_CmdrAdminLevelValue")) or 0
 	local level = tostring(player:GetAttribute("USARF_CmdrAdminLevel") or "")
 
-	return value >= 3
-		or level == "Moderator"
-		or level == "Administrator"
-		or level == "Developer"
-		or level == "Owner"
+	return value >= 3 or level == "Moderator" or level == "Administrator" or level == "Developer" or level == "Owner"
 end
 
 local function getChannelByKey(channelKey)
@@ -145,7 +136,6 @@ local function getTeamKey(player)
 		return nil
 	end
 
-	-- Covert players transmit as their home team, under their real username.
 	local covertHomeKey = CovertState.GetHomeTeamKey(player)
 	if covertHomeKey then
 		return covertHomeKey
@@ -308,10 +298,7 @@ local function canPassCooldown(sender, channelKey, text)
 	local duplicateText = normalizeDuplicateText(text)
 	local lastMessage = lastMessageByPlayer[userId][channelKey]
 
-	if lastMessage
-		and lastMessage.Text == duplicateText
-		and nowClock - lastMessage.At < duplicateCooldown
-	then
+	if lastMessage and lastMessage.Text == duplicateText and nowClock - lastMessage.At < duplicateCooldown then
 		return false, "Duplicate radio message"
 	end
 
@@ -425,7 +412,6 @@ local function auditRadioMessage(packet, sender)
 	end)
 end
 
--- Yields: player messages are filtered through TextService before being sent.
 function RadioService.Send(channelKey, sender, text)
 	channelKey = tostring(channelKey or "")
 	text = sanitizeText(text)
@@ -448,8 +434,6 @@ function RadioService.Send(channelKey, sender, text)
 		return false, cooldownReason
 	end
 
-	-- Cooldown/duplicate checks above use the original text; the buffer, logs and
-	-- broadcast below only ever see the filtered text.
 	if typeof(sender) == "Instance" and sender:IsA("Player") then
 		local filtered = filterText(text, sender.UserId)
 

@@ -1,72 +1,39 @@
--- USARF Ribbon Rack configuration
--- Priority 1 is the highest-precedence ribbon (top-left of the rack).
-
 local RibbonRackConfig = {}
 
 RibbonRackConfig.Rack = {
 	Name = "USARF_RibbonRack",
 	MaxColumns = 3,
-	-- Ribbons touch edge to edge (no gaps) so the rack reads as one solid bar.
-	-- Sized so three columns fill the plate area beside the name tape (0.34 studs).
 	RibbonWidth = 0.108,
 	RibbonHeight = 0.036,
 	HorizontalGap = 0,
 	VerticalGap = 0,
-	-- The ribbons are drawn on the rack's front face, so keep it paper-thin to sit on the vest.
 	Depth = 0.004,
-
-	-- SurfaceGui resolution for each ribbon.
 	PixelWidth = 240,
 	PixelHeight = 80,
 	PixelGap = 0,
-
-	-- Pixels trimmed from each edge of a ribbon's ImageRect to hide the images'
-	-- slightly soft/rounded edges where neighbouring ribbons meet.
 	CropInsetPixels = 3,
 }
 
 RibbonRackConfig.Mount = {
-	-- "Bottom": the mount point is the rack's BOTTOM-CENTER and new rows stack upward.
-	-- "Top": the mount point is the TOP-CENTER and new rows stack downward.
-	AnchorEdge = "Bottom",
 
-	-- Every morph in ServerStorage.Morphs has an Attachment with this name in its
-	-- Chest1.Middle part, placed per morph (measured against that morph's vest). Its
-	-- WorldCFrame is the rack's AnchorEdge center, at the rack's mid-depth: the rack's
-	-- back face rests 0.002 studs in front of the vest. Each one stores the measured
-	-- vest surface in its VestSurfaceZ attribute. Move the attachment in Studio to
-	-- adjust a morph; add one to any new morph.
+	AnchorEdge = "Bottom",
 	AttachmentName = "USARF_MedalMount",
 	AttachmentAdjustment = CFrame.new(),
-
-	-- Fallback when the character has no USARF_MedalMount (e.g. no uniform), relative
-	-- to UpperTorso.
 	UpperTorsoOffset = CFrame.new(0.360, 0.305, -0.630),
 }
 
--- Permanent source of medals: the "medals" tab of the A51 In-game Systems sheet.
--- Columns: Roblox Username | Roblox UserId | Medals: (multi-select dropdown, which
--- arrives as a comma-separated list, e.g. "Medal of Honor, Combat Medal").
--- The sheet web app renames "Medals:" to "Awards", so both are accepted.
 RibbonRackConfig.GoogleSheet = {
 	Enabled = true,
 	Url = "https://script.google.com/macros/s/AKfycbxLBXO-xrQSH-lkl_zsyMKtvv2pXHivaXR_ikCHJJhaexuVk1gq0Dljy6OF3lJD2o0u0g/exec?sheet=medals",
 	CacheSeconds = 300,
 
-	-- Matched ignoring case, spaces and punctuation.
 	UserIdColumns = { "RobloxUserId", "UserId" },
-	MedalColumns = { "Medals", "Awards", "Ribbons" },
+	MedalColumns = { "Awards" },
 }
 
--- Temporary, in-server medals (testing / live grants). These are added on top
--- of the sheet and are lost when the player leaves.
 RibbonRackConfig.Ownership = {
-	-- JSON array, for example:
-	-- player:SetAttribute("USARF_Medals", '["MedalOfHonor","CombatMedal"]')
-	AttributeName = "USARF_Medals",
 
-	-- Optional alternative: a Folder under Player containing enabled BoolValues.
-	FolderName = "Medals",
+	AttributeName = "USARF_Medals",
 }
 
 RibbonRackConfig.Rendering = {
@@ -74,20 +41,6 @@ RibbonRackConfig.Rendering = {
 	LightInfluence = 0.25,
 	ZOffset = 1,
 }
-
-RibbonRackConfig.Testing = {
-	-- Leave false in production. Set true temporarily to show every configured
-	-- ribbon on every player while testing in Studio.
-	GrantAllInStudio = false,
-}
-
--- Medal names in the sheet are matched against Key, DisplayName and Aliases,
--- ignoring case, spaces and punctuation ("medal of honor" = "MedalOfHonor").
---
--- ImageRect = { x, y, width, height }: where the ribbon sits inside its image, in
--- pixels. The images are 1023x682 with transparent padding around the ribbon, so
--- this crop is what lets each ribbon fill its slot. If you change an ImageId,
--- update its ImageRect too (or remove it to show the whole image).
 RibbonRackConfig.Medals = {
 	{
 		Key = "MedalOfHonor",

@@ -51,17 +51,9 @@ local function getOrCreate(parent, className, name)
 	return object
 end
 
-local USARFRemotes = getOrCreate(
-	ReplicatedStorage,
-	"Folder",
-	REMOTE_FOLDER_NAME
-)
+local USARFRemotes = getOrCreate(ReplicatedStorage, "Folder", REMOTE_FOLDER_NAME)
 
-local ModerationRemote = getOrCreate(
-	USARFRemotes,
-	"RemoteEvent",
-	MODERATION_REMOTE_NAME
-)
+local ModerationRemote = getOrCreate(USARFRemotes, "RemoteEvent", MODERATION_REMOTE_NAME)
 
 local Queue = {}
 local Processing = false
@@ -81,9 +73,7 @@ local function debugWarn(...)
 end
 
 local function clean(value)
-	return tostring(value or "")
-		:gsub("^%s+", "")
-		:gsub("%s+$", "")
+	return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 local function copyTable(source)
@@ -134,21 +124,12 @@ local function performRequest(path, method, payload)
 		requestOptions.Body = HttpService:JSONEncode(payload or {})
 	end
 
-	debugPrint(
-		"Request",
-		requestOptions.Method,
-		requestOptions.Url
-	)
+	debugPrint("Request", requestOptions.Method, requestOptions.Url)
 
 	local response = HttpService:RequestAsync(requestOptions)
 	local decoded = decodeResponseBody(response.Body)
 
-	debugPrint(
-		"Response",
-		response.StatusCode,
-		response.Success,
-		response.Body
-	)
+	debugPrint("Response", response.StatusCode, response.Success, response.Body)
 
 	return {
 		ok = response.Success == true,
@@ -160,11 +141,7 @@ local function performRequest(path, method, payload)
 end
 
 local function requestQueueItem(item)
-	return performRequest(
-		item.path,
-		item.method,
-		item.payload
-	)
+	return performRequest(item.path, item.method, item.payload)
 end
 
 local function enqueue(path, method, payload)
@@ -194,17 +171,9 @@ local function processQueue()
 			local item = Queue[1]
 
 			if os.clock() < item.nextAttempt then
-				task.wait(
-					math.max(
-						0.5,
-						item.nextAttempt - os.clock()
-					)
-				)
+				task.wait(math.max(0.5, item.nextAttempt - os.clock()))
 			else
-				local success, result = pcall(
-					requestQueueItem,
-					item
-				)
+				local success, result = pcall(requestQueueItem, item)
 
 				if success and result and result.ok then
 					table.remove(Queue, 1)
@@ -212,26 +181,13 @@ local function processQueue()
 					item.attempts += 1
 
 					if item.attempts >= MAX_ATTEMPTS then
-						debugWarn(
-							"Dropping request after maximum attempts:",
-							item.path,
-							result
-						)
+						debugWarn("Dropping request after maximum attempts:", item.path, result)
 
 						table.remove(Queue, 1)
 					else
-						item.nextAttempt =
-							os.clock()
-							+ math.min(
-								60,
-								2 ^ item.attempts
-							)
+						item.nextAttempt = os.clock() + math.min(60, 2 ^ item.attempts)
 
-						debugWarn(
-							"Request failed; retry queued:",
-							item.path,
-							item.attempts
-						)
+						debugWarn("Request failed; retry queued:", item.path, item.attempts)
 					end
 				end
 			end
@@ -241,33 +197,17 @@ local function processQueue()
 	end)
 end
 
-local function getOpenCaseRequestKey(
-	targetUserId,
-	openedByUserId
-)
-	return string.format(
-		"%s:%s",
-		tostring(openedByUserId or 0),
-		tostring(targetUserId or 0)
-	)
+local function getOpenCaseRequestKey(targetUserId, openedByUserId)
+	return string.format("%s:%s", tostring(openedByUserId or 0), tostring(targetUserId or 0))
 end
 
-local function makeOpenCaseIdempotencyKey(
-	targetPlayer,
-	openedByPlayer
-)
-	local timeBucket = math.floor(
-		os.time() / OPEN_CASE_DEBOUNCE_SECONDS
-	)
+local function makeOpenCaseIdempotencyKey(targetPlayer, openedByPlayer)
+	local timeBucket = math.floor(os.time() / OPEN_CASE_DEBOUNCE_SECONDS)
 
 	return table.concat({
 		"roblox",
 		clean(game.JobId) ~= "" and game.JobId or "studio",
-		tostring(
-			openedByPlayer
-				and openedByPlayer.UserId
-				or 0
-		),
+		tostring(openedByPlayer and openedByPlayer.UserId or 0),
 		tostring(targetPlayer.UserId),
 		tostring(timeBucket),
 	}, ":")
@@ -284,86 +224,71 @@ local function normalizeOpenCaseResponse(result)
 	if not result.ok then
 		local responseBody = result.data or {}
 
-		return false, {
-			success = false,
-			statusCode = result.statusCode,
-			error = responseBody.error
-				or "request_failed",
-			message = responseBody.message
-				or result.statusMessage
-				or "The backend rejected the case request.",
-		}
+		return false,
+			{
+				success = false,
+				statusCode = result.statusCode,
+				error = responseBody.error or "request_failed",
+				message = responseBody.message or result.statusMessage or "The backend rejected the case request.",
+			}
 	end
 
 	local outerPayload = result.data or {}
 
 	if outerPayload.ok == false then
-		return false, {
-			success = false,
-			statusCode = result.statusCode,
-			error = outerPayload.error
-				or "request_failed",
-			message = outerPayload.message
-				or "The backend rejected the case request.",
-		}
+		return false,
+			{
+				success = false,
+				statusCode = result.statusCode,
+				error = outerPayload.error or "request_failed",
+				message = outerPayload.message or "The backend rejected the case request.",
+			}
 	end
 
 	local data = outerPayload.data or outerPayload
 
 	if data.success == false then
-		return false, {
-			success = false,
-			statusCode = result.statusCode,
-			error = data.error
-				or outerPayload.error
-				or "case_creation_failed",
-			message = data.message
-				or outerPayload.message
-				or "The moderation case could not be created.",
-		}
+		return false,
+			{
+				success = false,
+				statusCode = result.statusCode,
+				error = data.error or outerPayload.error or "case_creation_failed",
+				message = data.message or outerPayload.message or "The moderation case could not be created.",
+			}
 	end
 
-	local caseNumber = clean(
-		data.caseNumber
-			or data.caseId
-	)
+	local caseNumber = clean(data.caseNumber or data.caseId)
 
-	local caseReference = clean(
-		data.caseReference
-			or data.caseRef
-	)
+	local caseReference = clean(data.caseReference or data.caseRef)
 
 	if caseNumber == "" then
-		return false, {
-			success = false,
-			statusCode = result.statusCode,
-			error = "missing_case_number",
-			message = "The backend created a case but did not return a case number.",
-		}
+		return false,
+			{
+				success = false,
+				statusCode = result.statusCode,
+				error = "missing_case_number",
+				message = "The backend created a case but did not return a case number.",
+			}
 	end
 
-	return true, {
-		success = true,
+	return true,
+		{
+			success = true,
 
-		created = data.created == true,
-		duplicate = data.duplicate == true,
+			created = data.created == true,
+			duplicate = data.duplicate == true,
 
-		gameCaseId = data.gameCaseId,
-		caseId = caseNumber,
-		caseNumber = caseNumber,
-		caseReference = caseReference,
+			gameCaseId = data.gameCaseId,
+			caseId = caseNumber,
+			caseNumber = caseNumber,
+			caseReference = caseReference,
 
-		discordChannelId = data.discordChannelId,
-		discordGuildId = data.discordGuildId,
+			discordChannelId = data.discordChannelId,
+			discordGuildId = data.discordGuildId,
 
-		message = clean(data.message) ~= ""
-			and data.message
-			or (
-				"Case "
-				.. caseNumber
-				.. " was opened successfully."
-			),
-	}
+			message = clean(data.message) ~= "" and data.message
+				or ("Case " .. caseNumber .. " was opened successfully."),
+		}
 end
 
 local function requestOpenCase(payload)
@@ -371,16 +296,11 @@ local function requestOpenCase(payload)
 
 	for attempt = 1, OPEN_CASE_MAX_ATTEMPTS do
 		local requestSuccess, result = pcall(function()
-			return performRequest(
-				"/cases/open",
-				"POST",
-				payload
-			)
+			return performRequest("/cases/open", "POST", payload)
 		end)
 
 		if requestSuccess then
-			local normalizedSuccess, normalized =
-				normalizeOpenCaseResponse(result)
+			local normalizedSuccess, normalized = normalizeOpenCaseResponse(result)
 
 			if normalizedSuccess then
 				return true, normalized
@@ -388,12 +308,9 @@ local function requestOpenCase(payload)
 
 			latestFailure = normalized
 
-			local statusCode =
-				tonumber(normalized.statusCode)
-				or 0
+			local statusCode = tonumber(normalized.statusCode) or 0
 
-			local shouldRetry =
-				statusCode == 0
+			local shouldRetry = statusCode == 0
 				or statusCode == 408
 				or statusCode == 425
 				or statusCode == 429
@@ -411,23 +328,20 @@ local function requestOpenCase(payload)
 		end
 
 		if attempt < OPEN_CASE_MAX_ATTEMPTS then
-			task.wait(
-				OPEN_CASE_RETRY_DELAY * attempt
-			)
+			task.wait(OPEN_CASE_RETRY_DELAY * attempt)
 		end
 	end
 
-	return false, latestFailure or {
-		success = false,
-		error = "case_request_failed",
-		message = "The case request failed after multiple attempts.",
-	}
+	return false,
+		latestFailure or {
+			success = false,
+			error = "case_request_failed",
+			message = "The case request failed after multiple attempts.",
+		}
 end
 
 local Bridge = {}
 
--- Immediate (unqueued) request for callers that need the reply, such as reads.
--- Returns { ok, statusCode, body, data }, or nil if the request errored.
 function Bridge.Request(path, method, payload)
 	local success, result = pcall(performRequest, path, method, payload)
 
@@ -448,12 +362,7 @@ function Bridge.SendEvent(eventType, payload)
 	processQueue()
 end
 
-function Bridge.OpenCase(
-	targetPlayer,
-	openedByPlayer,
-	teamName,
-	notes
-)
+function Bridge.OpenCase(targetPlayer, openedByPlayer, teamName, notes)
 	if not targetPlayer then
 		return false, {
 			success = false,
@@ -475,24 +384,15 @@ function Bridge.OpenCase(
 		}
 	end
 
-	local requestKey = getOpenCaseRequestKey(
-		targetPlayer.UserId,
-		openedByPlayer and openedByPlayer.UserId
-	)
+	local requestKey = getOpenCaseRequestKey(targetPlayer.UserId, openedByPlayer and openedByPlayer.UserId)
 
 	local existingRequest = OpenCaseRequests[requestKey]
 	local currentTime = os.clock()
 
 	if existingRequest then
 		if existingRequest.completedResponse then
-			if (
-				currentTime
-				- existingRequest.startedAt
-				) <= OPEN_CASE_DEBOUNCE_SECONDS then
-				local cached =
-					copyTable(
-						existingRequest.completedResponse
-					)
+			if (currentTime - existingRequest.startedAt) <= OPEN_CASE_DEBOUNCE_SECONDS then
+				local cached = copyTable(existingRequest.completedResponse)
 
 				cached.duplicate = true
 
@@ -505,31 +405,29 @@ function Bridge.OpenCase(
 
 			while existingRequest.inProgress do
 				if os.clock() - waitStartedAt > 20 then
-					return false, {
-						success = false,
-						message = "The existing case request timed out.",
-					}
+					return false,
+						{
+							success = false,
+							message = "The existing case request timed out.",
+						}
 				end
 
 				task.wait(0.1)
 			end
 
 			if existingRequest.completedResponse then
-				local cached =
-					copyTable(
-						existingRequest.completedResponse
-					)
+				local cached = copyTable(existingRequest.completedResponse)
 
 				cached.duplicate = true
 
 				return true, cached
 			end
 
-			return false, {
-				success = false,
-				message = existingRequest.errorMessage
-					or "The existing case request failed.",
-			}
+			return false,
+				{
+					success = false,
+					message = existingRequest.errorMessage or "The existing case request failed.",
+				}
 		end
 	end
 
@@ -547,32 +445,18 @@ function Bridge.OpenCase(
 		robloxUsername = targetPlayer.Name,
 		robloxDisplayName = targetPlayer.DisplayName,
 
-		openedByRobloxUserId = openedByPlayer
-			and tostring(openedByPlayer.UserId)
-			or nil,
+		openedByRobloxUserId = openedByPlayer and tostring(openedByPlayer.UserId) or nil,
 
-		openedByRobloxUsername = openedByPlayer
-			and openedByPlayer.Name
-			or nil,
+		openedByRobloxUsername = openedByPlayer and openedByPlayer.Name or nil,
 
-		currentTeam = teamName
-			or (
-				targetPlayer.Team
-				and targetPlayer.Team.Name
-			)
-			or "Unknown",
+		currentTeam = teamName or (targetPlayer.Team and targetPlayer.Team.Name) or "Unknown",
 
 		currentPlaceId = tostring(game.PlaceId),
 		currentJobId = clean(game.JobId),
 
-		initialNotes = clean(notes) ~= ""
-			and notes
-			or nil,
+		initialNotes = clean(notes) ~= "" and notes or nil,
 
-		idempotencyKey = makeOpenCaseIdempotencyKey(
-			targetPlayer,
-			openedByPlayer
-		),
+		idempotencyKey = makeOpenCaseIdempotencyKey(targetPlayer, openedByPlayer),
 	}
 
 	local success, result = requestOpenCase(payload)
@@ -580,31 +464,21 @@ function Bridge.OpenCase(
 	requestState.inProgress = false
 
 	if success then
-		requestState.completedResponse =
-			copyTable(result)
+		requestState.completedResponse = copyTable(result)
 
-		task.delay(
-			OPEN_CASE_DEBOUNCE_SECONDS + 2,
-			function()
-				if OpenCaseRequests[requestKey]
-					== requestState
-				then
-					OpenCaseRequests[requestKey] = nil
-				end
+		task.delay(OPEN_CASE_DEBOUNCE_SECONDS + 2, function()
+			if OpenCaseRequests[requestKey] == requestState then
+				OpenCaseRequests[requestKey] = nil
 			end
-		)
+		end)
 
 		return true, result
 	end
 
-	requestState.errorMessage =
-		result and result.message
-		or "The moderation case could not be opened."
+	requestState.errorMessage = result and result.message or "The moderation case could not be opened."
 
 	task.delay(2, function()
-		if OpenCaseRequests[requestKey]
-			== requestState
-		then
+		if OpenCaseRequests[requestKey] == requestState then
 			OpenCaseRequests[requestKey] = nil
 		end
 	end)
@@ -612,31 +486,16 @@ function Bridge.OpenCase(
 	return false, result
 end
 
-function Bridge.SubmitModeration(
-	actionType,
-	targetPlayer,
-	actorPlayer,
-	reason,
-	duration,
-	caseRef,
-	options
-)
+function Bridge.SubmitModeration(actionType, targetPlayer, actorPlayer, reason, duration, caseRef, options)
 	if not targetPlayer then
-		warn(
-			"[DiscordBotBridge] SubmitModeration failed: missing target player."
-		)
+		warn("[DiscordBotBridge] SubmitModeration failed: missing target player.")
 
 		return false, "Missing target player."
 	end
 
 	options = options or {}
 
-	debugPrint(
-		"Queue moderation action:",
-		actionType,
-		targetPlayer.Name,
-		caseRef
-	)
+	debugPrint("Queue moderation action:", actionType, targetPlayer.Name, caseRef)
 
 	enqueue("/moderation/action", "POST", {
 		caseRef = caseRef,
@@ -647,38 +506,27 @@ function Bridge.SubmitModeration(
 		robloxDisplayName = targetPlayer.DisplayName,
 		robloxUserId = tostring(targetPlayer.UserId),
 
-		teamName = targetPlayer.Team
-			and targetPlayer.Team.Name
-			or "Unknown",
+		teamName = targetPlayer.Team and targetPlayer.Team.Name or "Unknown",
 
 		currentPlaceId = tostring(game.PlaceId),
 		currentJobId = clean(game.JobId),
 
-		actorRobloxUserId = actorPlayer
-			and tostring(actorPlayer.UserId)
-			or nil,
+		actorRobloxUserId = actorPlayer and tostring(actorPlayer.UserId) or nil,
 
-		actorRobloxUsername = actorPlayer
-			and actorPlayer.Name
-			or "System",
+		actorRobloxUsername = actorPlayer and actorPlayer.Name or "System",
 
-		actorDisplayName = actorPlayer
-			and actorPlayer.DisplayName
-			or "System",
+		actorDisplayName = actorPlayer and actorPlayer.DisplayName or "System",
 
-		reason = reason
-			or "No reason provided.",
+		reason = reason or "No reason provided.",
 
 		duration = duration,
 
 		evidence = options.evidence,
 		internalNotes = options.internalNotes,
 
-		notifyPlayer =
-			options.notifyPlayer ~= false,
+		notifyPlayer = options.notifyPlayer ~= false,
 
-		immediateRemoval =
-			options.immediateRemoval ~= false,
+		immediateRemoval = options.immediateRemoval ~= false,
 
 		source = "roblox",
 	})
@@ -688,15 +536,7 @@ function Bridge.SubmitModeration(
 	return true
 end
 
-function Bridge.SubmitSuspension(
-	targetPlayer,
-	actorPlayer,
-	scope,
-	reason,
-	duration,
-	caseRef,
-	options
-)
+function Bridge.SubmitSuspension(targetPlayer, actorPlayer, scope, reason, duration, caseRef, options)
 	if not targetPlayer then
 		return false, "Missing target player."
 	end
@@ -710,51 +550,34 @@ function Bridge.SubmitSuspension(
 		robloxDisplayName = targetPlayer.DisplayName,
 		robloxUserId = tostring(targetPlayer.UserId),
 
-		teamName = targetPlayer.Team
-			and targetPlayer.Team.Name
-			or "Unknown",
+		teamName = targetPlayer.Team and targetPlayer.Team.Name or "Unknown",
 
 		currentPlaceId = tostring(game.PlaceId),
 		currentJobId = clean(game.JobId),
 
-		actorRobloxUserId = actorPlayer
-			and tostring(actorPlayer.UserId)
-			or nil,
+		actorRobloxUserId = actorPlayer and tostring(actorPlayer.UserId) or nil,
 
-		actorRobloxUsername = actorPlayer
-			and actorPlayer.Name
-			or "System",
+		actorRobloxUsername = actorPlayer and actorPlayer.Name or "System",
 
-		actorDisplayName = actorPlayer
-			and actorPlayer.DisplayName
-			or "System",
+		actorDisplayName = actorPlayer and actorPlayer.DisplayName or "System",
 
-		suspensionType = options.suspensionType
-			or options.scopeType
-			or "team",
+		suspensionType = options.suspensionType or options.scopeType or "team",
 
-		scopeType = options.scopeType
-			or options.suspensionType
-			or "team",
+		scopeType = options.scopeType or options.suspensionType or "team",
 
 		scope = scope,
-		scopeValue = options.scopeValue
-			or scope,
+		scopeValue = options.scopeValue or scope,
 
-		scopeDisplay = options.scopeDisplay
-			or scope,
+		scopeDisplay = options.scopeDisplay or scope,
 
-		reason = reason
-			or "No reason provided.",
+		reason = reason or "No reason provided.",
 
-		duration = duration
-			or "permanent",
+		duration = duration or "permanent",
 
 		evidence = options.evidence,
 		internalNotes = options.internalNotes,
 
-		notifyPlayer =
-			options.notifyPlayer ~= false,
+		notifyPlayer = options.notifyPlayer ~= false,
 
 		source = "roblox",
 	})
@@ -764,64 +587,41 @@ function Bridge.SubmitSuspension(
 	return true
 end
 
-local function showGameWarning(
-	player,
-	reason,
-	caseRef,
-	issuer
-)
+local function showGameWarning(player, reason, caseRef, issuer)
 	if not player or not player.Parent then
 		return
 	end
 
-	ModerationRemote:FireClient(
-		player,
-		"WarnPopup",
-		{
-			title = "GAME WARNING",
-			time = os.time(),
-			reason = reason
-				or "A moderation action was issued.",
-			caseId = caseRef
-				or "N/A",
-			issuer = issuer
-				or "SYSTEM",
-		}
-	)
+	ModerationRemote:FireClient(player, "WarnPopup", {
+		title = "GAME WARNING",
+		time = os.time(),
+		reason = reason or "A moderation action was issued.",
+		caseId = caseRef or "N/A",
+		issuer = issuer or "SYSTEM",
+	})
 end
 
-local function markNotificationDelivered(
-	player,
-	notification
-)
+local function markNotificationDelivered(player, notification)
 	if not notification or not notification.id then
 		return
 	end
 
-	enqueue(
-		"/moderation/notification-delivered",
-		"POST",
-		{
-			notificationId = notification.id,
-			robloxUserId = tostring(player.UserId),
-			deliveredAt = os.time(),
-		}
-	)
+	enqueue("/moderation/notification-delivered", "POST", {
+		notificationId = notification.id,
+		robloxUserId = tostring(player.UserId),
+		deliveredAt = os.time(),
+	})
 
 	processQueue()
 end
 
 local function fireExternalSuspensionChanged(player)
-	local event = Services:FindFirstChild(
-		"ExternalSuspensionChanged"
-	)
+	local event = Services:FindFirstChild("ExternalSuspensionChanged")
 
 	if event and event:IsA("BindableEvent") then
 		event:Fire(player)
 	else
-		warn(
-			"[DiscordBotBridge] ExternalSuspensionChanged BindableEvent missing."
-		)
+		warn("[DiscordBotBridge] ExternalSuspensionChanged BindableEvent missing.")
 	end
 end
 
@@ -862,9 +662,7 @@ local function normalizeUnixTimestamp(value)
 end
 
 local function normalizeSuspensionRecord(suspension)
-	local metadata = suspension.metadataJson
-		or suspension.metadata_json
-		or {}
+	local metadata = suspension.metadataJson or suspension.metadata_json or {}
 
 	local caseNumber = clean(
 		suspension.caseNumber
@@ -886,12 +684,8 @@ local function normalizeSuspensionRecord(suspension)
 			or suspension.case_ref
 	)
 
-	local sanctionId = clean(
-		suspension.sanctionId
-			or suspension.sanction_id
-			or metadata.sanctionId
-			or metadata.sanction_id
-	)
+	local sanctionId =
+		clean(suspension.sanctionId or suspension.sanction_id or metadata.sanctionId or metadata.sanction_id)
 
 	local scopeType = clean(
 		suspension.scopeType
@@ -929,21 +723,14 @@ local function normalizeSuspensionRecord(suspension)
 			or "Unknown"
 	)
 
-	local state = clean(
-		suspension.state
-			or suspension.status
-			or "active"
-	):lower()
+	local state = clean(suspension.state or suspension.status or "active"):lower()
 
 	if state == "voided" then
 		state = "void"
 	end
 
 	local expiresAt = normalizeUnixTimestamp(
-		suspension.expiresAt
-			or suspension.expires_at
-			or metadata.expiresAt
-			or metadata.expires_at
+		suspension.expiresAt or suspension.expires_at or metadata.expiresAt or metadata.expires_at
 	)
 
 	if expiresAt and expiresAt <= os.time() then
@@ -957,21 +744,14 @@ local function normalizeSuspensionRecord(suspension)
 		sanctionId = sanctionId ~= "" and sanctionId or nil,
 
 		sanctionType = clean(
-			suspension.type
-				or suspension.actionType
-				or suspension.action_type
-				or metadata.type
-				or "team_suspension"
+			suspension.type or suspension.actionType or suspension.action_type or metadata.type or "team_suspension"
 		),
 
 		scopeType = scopeType,
 		scopeValue = scopeValue,
 		scopeDisplay = scopeDisplay,
 
-		reason = clean(
-			suspension.reason
-				or "External team suspension."
-		),
+		reason = clean(suspension.reason or "External team suspension."),
 
 		state = state,
 		durationSeconds = tonumber(
@@ -982,10 +762,7 @@ local function normalizeSuspensionRecord(suspension)
 		),
 
 		startsAt = normalizeUnixTimestamp(
-			suspension.startsAt
-				or suspension.starts_at
-				or suspension.createdAt
-				or suspension.created_at
+			suspension.startsAt or suspension.starts_at or suspension.createdAt or suspension.created_at
 		),
 
 		expiresAt = expiresAt,
@@ -1070,36 +847,20 @@ local function checkModerationStatus(player)
 		return
 	end
 
-	debugPrint(
-		"Checking moderation status for:",
-		player.Name,
-		player.UserId
-	)
+	debugPrint("Checking moderation status for:", player.Name, player.UserId)
 
 	local requestSuccess, result = pcall(function()
-		return performRequest(
-			"/moderation/status/"
-				.. tostring(player.UserId),
-			"GET",
-			nil
-		)
+		return performRequest("/moderation/status/" .. tostring(player.UserId), "GET", nil)
 	end)
 
 	if not requestSuccess then
-		debugWarn(
-			"Moderation status request errored:",
-			result
-		)
+		debugWarn("Moderation status request errored:", result)
 
 		return
 	end
 
 	if not result or not result.ok then
-		debugWarn(
-			"Moderation status request failed:",
-			result and result.statusCode,
-			result and result.body
-		)
+		debugWarn("Moderation status request failed:", result and result.statusCode, result and result.body)
 
 		return
 	end
@@ -1107,99 +868,49 @@ local function checkModerationStatus(player)
 	local outerPayload = result.data or {}
 	local data = outerPayload.data or outerPayload
 
-	debugPrint(
-		"Notifications found:",
-		#(data.notifications or {})
-	)
+	debugPrint("Notifications found:", #(data.notifications or {}))
 
-	debugPrint(
-		"Actions found:",
-		#(data.actions or {})
-	)
+	debugPrint("Actions found:", #(data.actions or {}))
 
-	for _, notification in ipairs(
-		data.notifications or {}
-		) do
-		local caseRef =
-			notification.caseRef
-			or notification.case_ref
+	for _, notification in ipairs(data.notifications or {}) do
+		local caseRef = notification.caseRef or notification.case_ref
 
-		local payloadJson =
-			notification.payloadJson
-			or notification.payload_json
-			or {}
+		local payloadJson = notification.payloadJson or notification.payload_json or {}
 
-		local reason =
-			notification.body
+		local reason = notification.body
 			or notification.reason
 			or payloadJson.reason
 			or "A moderation action was issued."
 
-		local notificationType = string.lower(
-			tostring(
-				notification.notificationType
-					or notification.notification_type
-					or ""
-			)
-		)
+		local notificationType =
+			string.lower(tostring(notification.notificationType or notification.notification_type or ""))
 
-		if notificationType == "warn"
+		if
+			notificationType == "warn"
 			or notificationType == "warning"
 			or notificationType == "game_warning"
 			or notificationType == "game warning"
 		then
-			showGameWarning(
-				player,
-				reason,
-				caseRef
-			)
+			showGameWarning(player, reason, caseRef)
 		else
-			-- Suspensions are enforced through the team/menu system and bans
-			-- are enforced by the active action check below. Neither should
-			-- display the game-warning acknowledgement popup.
-			debugPrint(
-				"Skipping WarnPopup for notification type:",
-				notificationType,
-				player.Name,
-				caseRef
-			)
+			debugPrint("Skipping WarnPopup for notification type:", notificationType, player.Name, caseRef)
 		end
 
-		markNotificationDelivered(
-			player,
-			notification
-		)
+		markNotificationDelivered(player, notification)
 	end
 
 	local liveSuspensions = data.suspensions or {}
-	local suspensionChanged, normalizedSuspensions =
-		applyExternalSuspensions(player, liveSuspensions)
+	local suspensionChanged, normalizedSuspensions = applyExternalSuspensions(player, liveSuspensions)
 
-	debugPrint(
-		"Active external suspensions:",
-		player.Name,
-		#normalizedSuspensions,
-		"changed:",
-		suspensionChanged
-	)
+	debugPrint("Active external suspensions:", player.Name, #normalizedSuspensions, "changed:", suspensionChanged)
 
 	for _, action in ipairs(data.actions or {}) do
-		local actionType = string.lower(
-			tostring(
-				action.actionType
-					or action.action_type
-					or ""
-			)
-		)
+		local actionType = string.lower(tostring(action.actionType or action.action_type or ""))
 
 		if actionType == "ban" then
-			local metadata =
-				action.metadataJson
-				or action.metadata_json
-				or {}
+			local metadata = action.metadataJson or action.metadata_json or {}
 
-			local immediateRemoval =
-				metadata.immediateRemoval
+			local immediateRemoval = metadata.immediateRemoval
 
 			if immediateRemoval == nil then
 				immediateRemoval = true
@@ -1209,11 +920,8 @@ local function checkModerationStatus(player)
 				player:Kick(
 					string.format(
 						"Banned: %s\nCase: %s",
-						action.reason
-							or "No reason provided.",
-						action.caseRef
-							or action.case_ref
-							or "N/A"
+						action.reason or "No reason provided.",
+						action.caseRef or action.case_ref or "N/A"
 					)
 				)
 
@@ -1234,16 +942,8 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-
-	for requestKey, requestState in pairs(
-		OpenCaseRequests
-		) do
-		if string.find(
-			requestKey,
-			":" .. tostring(player.UserId),
-			1,
-			true
-			) then
+	for requestKey, requestState in pairs(OpenCaseRequests) do
+		if string.find(requestKey, ":" .. tostring(player.UserId), 1, true) then
 			if not requestState.inProgress then
 				OpenCaseRequests[requestKey] = nil
 			end
@@ -1259,9 +959,7 @@ task.spawn(function()
 	while true do
 		task.wait(LIVE_CHECK_INTERVAL)
 
-		for _, player in ipairs(
-			Players:GetPlayers()
-			) do
+		for _, player in ipairs(Players:GetPlayers()) do
 			task.spawn(function()
 				checkModerationStatus(player)
 			end)

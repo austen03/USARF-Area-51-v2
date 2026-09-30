@@ -119,11 +119,7 @@ local function sendItem(item)
 	item.status = "Sending"
 
 	local success, result = pcall(function()
-		return HttpService:PostAsync(
-			url,
-			HttpService:JSONEncode(item.payload),
-			Enum.HttpContentType.ApplicationJson
-		)
+		return HttpService:PostAsync(url, HttpService:JSONEncode(item.payload), Enum.HttpContentType.ApplicationJson)
 	end)
 
 	if success then

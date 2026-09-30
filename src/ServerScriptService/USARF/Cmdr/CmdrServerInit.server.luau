@@ -8,13 +8,8 @@ local ConfigFolder = USARFServer:WaitForChild("Config")
 
 local CmdrAdminConfig = require(ConfigFolder:WaitForChild("CmdrAdminConfig"))
 
--- Register the permission hook first so it is always active, even if anything below errors.
 Cmdr.Registry:RegisterHook("BeforeRun", require(CmdrFolder:WaitForChild("Hooks"):WaitForChild("BeforeRun")))
 
--- Default Cmdr commands disabled.
--- Cmdr:RegisterDefaultCommands()
-
--- Cmdr 1.13: call methods on Cmdr.Registry directly (Cmdr:Method() still works but prints a deprecation warning).
 Cmdr.Registry:RegisterTypesIn(CmdrFolder:WaitForChild("Types"))
 Cmdr.Registry:RegisterCommandsIn(CmdrFolder:WaitForChild("Commands"))
 
@@ -38,7 +33,6 @@ local function getDisplayGroup(commandName)
 end
 
 local function applyCommandGroups()
-	-- Cmdr 1.13 made Registry.Commands private; GetCommands() is the public replacement.
 	local commands = Cmdr.Registry:GetCommands()
 
 	for _, commandObject in ipairs(commands) do

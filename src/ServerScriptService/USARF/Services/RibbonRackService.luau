@@ -10,14 +10,12 @@ local RibbonRackService = {}
 
 local started = false
 
--- Set on the character by UniformService whenever a uniform is applied or cleared.
 local UNIFORM_APPLIED_ATTRIBUTE = "USARFUniformApplied"
 
 local playerConnections = {}
 local characterConnections = {}
 local folderConnections = {}
 
--- [userId] = { [medalKey] = true }, loaded from the Google Sheet.
 local sheetMedals = {}
 local sheetFetching = false
 
@@ -25,7 +23,6 @@ local function normalizeName(value)
 	return (string.lower(tostring(value)):gsub("[^%w]", ""))
 end
 
--- Normalized Key / DisplayName / Alias -> definition.
 local definitionsByName = {}
 
 for _, definition in ipairs(Config.Medals) do
@@ -64,9 +61,6 @@ local function getMedalSignature(owned)
 	return table.concat(keys, ",")
 end
 
---// Ownership sources
-
--- Accepts an array of names or a { [name] = true } dictionary; returns { [medalKey] = true }.
 local function resolveOwnedMedals(raw)
 	local owned = {}
 
@@ -104,7 +98,6 @@ local function readAttributeMedals(player)
 		return resolveOwnedMedals(decoded)
 	end
 
-	-- Friendly fallback for a comma-separated list.
 	local names = {}
 	for token in string.gmatch(value, "[^,]+") do
 		table.insert(names, token)
@@ -146,8 +139,6 @@ local function mergeInto(target, source)
 	end
 end
 
---// Google Sheet
-
 local function getRowValue(row, columnNames)
 	for rowKey, value in pairs(row) do
 		local normalizedRowKey = normalizeName(rowKey)
@@ -162,7 +153,6 @@ local function getRowValue(row, columnNames)
 	return nil
 end
 
--- Returns the new { [userId] = { [medalKey] = true } } map, or nil on failure.
 local function fetchSheetMedals()
 	local sheetConfig = Config.GoogleSheet
 
@@ -224,8 +214,6 @@ local function fetchSheetMedals()
 	return medalsByUserId
 end
 
---// Rack building
-
 local function getSortedDefinitions(owned)
 	local definitions = {}
 
@@ -282,8 +270,6 @@ local function createRibbonImage(surfaceGui, definition, x, y, width, height, la
 	image.Size = UDim2.fromOffset(width, height)
 	image.Image = "rbxassetid://" .. tostring(definition.ImageId)
 
-	-- Crop away the image's transparent padding and stretch the ribbon to fill its slot,
-	-- so neighbouring ribbons touch.
 	local rect = definition.ImageRect
 	if rect then
 		local inset = Config.Rack.CropInsetPixels or 0
@@ -309,10 +295,8 @@ local function createRack(character, definitions)
 	local columns = math.min(rackConfig.MaxColumns, total)
 	local rows = math.ceil(total / rackConfig.MaxColumns)
 
-	local rackWidth = columns * rackConfig.RibbonWidth
-		+ math.max(0, columns - 1) * rackConfig.HorizontalGap
-	local rackHeight = rows * rackConfig.RibbonHeight
-		+ math.max(0, rows - 1) * rackConfig.VerticalGap
+	local rackWidth = columns * rackConfig.RibbonWidth + math.max(0, columns - 1) * rackConfig.HorizontalGap
+	local rackHeight = rows * rackConfig.RibbonHeight + math.max(0, rows - 1) * rackConfig.VerticalGap
 
 	local anchorPart, mountCFrame = findMount(character)
 	if not anchorPart or not mountCFrame then
@@ -323,7 +307,7 @@ local function createRack(character, definitions)
 	local rack = Instance.new("Part")
 	rack.Name = rackConfig.Name
 	rack.Size = Vector3.new(rackWidth, rackHeight, rackConfig.Depth)
-	-- Bottom-anchored racks grow upward from the mount point; top-anchored racks grow downward.
+
 	local growDirection = Config.Mount.AnchorEdge == "Bottom" and 1 or -1
 	rack.CFrame = mountCFrame * CFrame.new(0, growDirection * rackHeight / 2, 0)
 	rack.Transparency = 1
@@ -337,10 +321,8 @@ local function createRack(character, definitions)
 	rack:SetAttribute("HighestPriorityMedal", definitions[1].Key)
 	rack.Parent = character
 
-	local canvasWidth = columns * rackConfig.PixelWidth
-		+ math.max(0, columns - 1) * rackConfig.PixelGap
-	local canvasHeight = rows * rackConfig.PixelHeight
-		+ math.max(0, rows - 1) * rackConfig.PixelGap
+	local canvasWidth = columns * rackConfig.PixelWidth + math.max(0, columns - 1) * rackConfig.PixelGap
+	local canvasHeight = rows * rackConfig.PixelHeight + math.max(0, rows - 1) * rackConfig.PixelGap
 
 	local surfaceGui = Instance.new("SurfaceGui")
 	surfaceGui.Name = "Ribbons"
@@ -352,15 +334,13 @@ local function createRack(character, definitions)
 	surfaceGui.ZOffset = Config.Rendering.ZOffset
 	surfaceGui.Parent = rack
 
-	-- The top row holds the remainder and is centered; lower rows are full.
 	local remainder = total % rackConfig.MaxColumns
 	local firstRowCount = remainder == 0 and rackConfig.MaxColumns or remainder
 	local definitionIndex = 1
 
 	for row = 1, rows do
 		local rowCount = row == 1 and firstRowCount or rackConfig.MaxColumns
-		local rowPixelWidth = rowCount * rackConfig.PixelWidth
-			+ math.max(0, rowCount - 1) * rackConfig.PixelGap
+		local rowPixelWidth = rowCount * rackConfig.PixelWidth + math.max(0, rowCount - 1) * rackConfig.PixelGap
 		local startX = math.floor((canvasWidth - rowPixelWidth) / 2)
 		local y = (row - 1) * (rackConfig.PixelHeight + rackConfig.PixelGap)
 
@@ -391,9 +371,6 @@ local function createRack(character, definitions)
 	return rack
 end
 
---// Public API
-
--- All medals the player currently wears: sheet + temporary (attribute / Medals folder).
 function RibbonRackService.GetOwnedMedals(player)
 	local owned = {}
 
@@ -433,7 +410,6 @@ function RibbonRackService.RefreshPlayer(player)
 	return RibbonRackService.BuildForCharacter(player, character)
 end
 
--- Re-reads the Google Sheet now and rebuilds racks for players whose medals changed.
 function RibbonRackService.RefreshSheet()
 	if sheetFetching then
 		return false
@@ -462,8 +438,6 @@ function RibbonRackService.RefreshSheet()
 	return true
 end
 
--- Temporary medals only (stored in the player attribute for this server).
--- Sheet medals are not affected; edit the sheet to change those permanently.
 function RibbonRackService.SetPlayerMedals(player, medalKeys)
 	local owned = resolveOwnedMedals(medalKeys)
 	local orderedKeys = {}
@@ -516,8 +490,6 @@ function RibbonRackService.GetMedalDefinitions()
 	return Config.Medals
 end
 
---// Player lifecycle
-
 local function refreshLater(player, delaySeconds)
 	task.delay(delaySeconds or 0, function()
 		if player.Parent == Players then
@@ -539,9 +511,12 @@ local function watchMedalFolder(player)
 
 	local function watchValue(instance)
 		if instance:IsA("ValueBase") then
-			table.insert(connections, instance.Changed:Connect(function()
-				refreshLater(player)
-			end))
+			table.insert(
+				connections,
+				instance.Changed:Connect(function()
+					refreshLater(player)
+				end)
+			)
 		end
 	end
 
@@ -549,63 +524,83 @@ local function watchMedalFolder(player)
 		watchValue(descendant)
 	end
 
-	table.insert(connections, folder.DescendantAdded:Connect(function(descendant)
-		watchValue(descendant)
-		refreshLater(player)
-	end))
+	table.insert(
+		connections,
+		folder.DescendantAdded:Connect(function(descendant)
+			watchValue(descendant)
+			refreshLater(player)
+		end)
+	)
 
-	table.insert(connections, folder.DescendantRemoving:Connect(function()
-		refreshLater(player)
-	end))
+	table.insert(
+		connections,
+		folder.DescendantRemoving:Connect(function()
+			refreshLater(player)
+		end)
+	)
 end
 
 local function onCharacterAdded(player, character)
 	disconnectConnections(characterConnections[player])
 	characterConnections[player] = {}
 
-	-- First pass handles normal character spawning.
 	refreshLater(player, 0.25)
 
-	-- Second pass allows morph/vest systems time to insert a custom mount.
 	refreshLater(player, 1.5)
 
-	table.insert(characterConnections[player], character.DescendantAdded:Connect(function(descendant)
-		if descendant.Name == Config.Mount.AttachmentName then
-			refreshLater(player)
-		end
-	end))
+	table.insert(
+		characterConnections[player],
+		character.DescendantAdded:Connect(function(descendant)
+			if descendant.Name == Config.Mount.AttachmentName then
+				refreshLater(player)
+			end
+		end)
+	)
 
-	-- Applying or clearing a uniform can reset the avatar and replace the UpperTorso
-	-- the rack is welded to, so rebuild afterwards.
-	table.insert(characterConnections[player], character:GetAttributeChangedSignal(UNIFORM_APPLIED_ATTRIBUTE):Connect(function()
-		refreshLater(player, 0.1)
-	end))
+	table.insert(
+		characterConnections[player],
+		character:GetAttributeChangedSignal(UNIFORM_APPLIED_ATTRIBUTE):Connect(function()
+			refreshLater(player, 0.1)
+		end)
+	)
 end
 
 local function onPlayerAdded(player)
 	playerConnections[player] = {}
 
-	table.insert(playerConnections[player], player:GetAttributeChangedSignal(Config.Ownership.AttributeName):Connect(function()
-		refreshLater(player)
-	end))
-
-	table.insert(playerConnections[player], player.ChildAdded:Connect(function(child)
-		if child.Name == Config.Ownership.FolderName then
-			watchMedalFolder(player)
+	table.insert(
+		playerConnections[player],
+		player:GetAttributeChangedSignal(Config.Ownership.AttributeName):Connect(function()
 			refreshLater(player)
-		end
-	end))
+		end)
+	)
 
-	table.insert(playerConnections[player], player.ChildRemoved:Connect(function(child)
-		if child.Name == Config.Ownership.FolderName then
-			watchMedalFolder(player)
-			refreshLater(player)
-		end
-	end))
+	table.insert(
+		playerConnections[player],
+		player.ChildAdded:Connect(function(child)
+			if child.Name == Config.Ownership.FolderName then
+				watchMedalFolder(player)
+				refreshLater(player)
+			end
+		end)
+	)
 
-	table.insert(playerConnections[player], player.CharacterAdded:Connect(function(character)
-		onCharacterAdded(player, character)
-	end))
+	table.insert(
+		playerConnections[player],
+		player.ChildRemoved:Connect(function(child)
+			if child.Name == Config.Ownership.FolderName then
+				watchMedalFolder(player)
+				refreshLater(player)
+			end
+		end)
+	)
+
+	table.insert(
+		playerConnections[player],
+		player.CharacterAdded:Connect(function(character)
+			onCharacterAdded(player, character)
+		end)
+	)
 
 	watchMedalFolder(player)
 

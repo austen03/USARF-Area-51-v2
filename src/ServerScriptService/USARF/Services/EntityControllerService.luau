@@ -7,17 +7,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
 local AnimationClipProvider = game:GetService("AnimationClipProvider")
 
--- Drives EE entities tagged "USARF_Entity".
---
--- Behaviour: an entity idles at its post until a living player comes within DetectRange.
--- It chases that player (attacking when in AttackRange) until they die, leave, or get
--- further than LoseRange away, then walks back to where it was standing and idles again.
---
--- The tagged model (or a model inside it) needs a Humanoid with an Animator and a
--- HumanoidRootPart. The tagged model holds an "Animations" folder of Animation instances
--- (Idle, Walk, Attack, plus optional extras such as the BreachAnimation or ability
--- animations). Tunables are attributes on the tagged model; see DEFAULTS.
-
 local EntityControllerService = {}
 
 local TAG = "USARF_Entity"
@@ -25,37 +14,26 @@ local THINK_INTERVAL = 0.2
 local ARRIVE_DISTANCE = 3
 local WAYPOINT_REACHED = 2.5
 local PATH_REFRESH_SECONDS = 4
--- A jump bigger than this between thinks means something else moved the entity
--- (breach/contain commands, Auto Breach), so its post becomes wherever it landed.
 local TELEPORT_THRESHOLD = 25
 
 local DEFAULTS = {
 	DetectRange = 60,
-	-- Distance at which a chased player is given up on. 0 means DetectRange + 20.
 	LoseRange = 0,
 	AttackRange = 6,
 	AttackDamage = 15,
 	AttackCooldown = 1.5,
-	-- Minimum dot product between the entity's facing and a victim's direction for a hit to land.
 	AttackArc = 0.3,
 	WalkSpeed = 12,
-	-- Animation played once when USARF_Breached turns true (e.g. "Awaken"). Empty for none.
 	BreachAnimation = "",
-	-- Seconds allowed to walk home before the entity is snapped back to its post.
 	ReturnTimeout = 30,
-	-- Special behaviour, see ABILITIES. Empty for none.
 	Ability = "",
-	-- BlackHole ability
 	PullRange = 10,
 	PullCooldown = 1.5,
 	BlackHoleTemplate = "BlackHole",
-	-- Burn ability
 	BurnDuration = 30,
 	InfectScript = "PlayerInfect",
 }
 
--- Markers authored into the entity animations. Each is re-fired on the model's
--- "AnimationMarker" BindableEvent as (animationName, markerName, value) for VFX/SFX hooks.
 local MARKERS = { "Hit", "Footstep", "Roar", "Burst", "Spores", "Emerged", "Scream", "Alert", "Pull", "Mimic" }
 
 local AntiExploitService = nil
@@ -92,7 +70,6 @@ local function getLoseRange(model)
 	return loseRange
 end
 
--- Entity attacks and abilities move players around; keep the anti-exploit from flagging that.
 local function giveGrace(player, seconds, reason)
 	if not player then
 		return
@@ -111,7 +88,6 @@ local function resolveAnimation(model, animation)
 		return animation
 	end
 
-	-- Unpublished animations can still be previewed in Studio straight from AnimSaves.
 	local saves = model:FindFirstChild("AnimSaves")
 	local sequence = saves and saves:FindFirstChild(animation.Name)
 
@@ -195,7 +171,6 @@ end
 
 local ABILITIES = {}
 
--- EE-05: drags players standing just outside melee range to itself through a black hole.
 ABILITIES.BlackHole = {}
 
 function ABILITIES.BlackHole.think(state, targetRoot, distance)
@@ -273,9 +248,6 @@ function ABILITIES.BlackHole.onHit(state)
 	end
 end
 
--- EE-01/EE-02: sets victims alight. They redden and burn out over BurnDuration seconds and
--- carry a copy of the entity's PlayerInfect script so the infection can spread. Burning
--- players are left alone so the entity moves on to someone else (or heads home).
 ABILITIES.Burn = {}
 
 function ABILITIES.Burn.ignores(_state, character)
@@ -312,7 +284,6 @@ function ABILITIES.Burn.onHit(state, _player, victimHumanoid)
 	end
 end
 
--- EE-06: takes on the appearance of whoever it kills.
 ABILITIES.Mimic = {}
 
 function ABILITIES.Mimic.onHit(state, _player, victimHumanoid, killed)
@@ -425,7 +396,6 @@ local function attack(state, targetRoot)
 	state.busy = false
 end
 
--- Forget the current chase and treat the current spot as the entity's post.
 local function settle(state)
 	state.target = nil
 	state.mode = "Idle"
@@ -450,7 +420,6 @@ local function walkTowards(state, goal)
 			state.path = path:GetWaypoints()
 			state.waypointIndex = 2
 		else
-			-- No route found (or the entity is too big for the navmesh); walk straight there.
 			state.path = false
 		end
 	end
@@ -592,7 +561,6 @@ local function onBreachedChanged(state)
 		state.busy = false
 	end
 
-	-- Breach and contain commands teleport the entity; its post is wherever it ends up.
 	settle(state)
 end
 

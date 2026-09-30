@@ -29,13 +29,9 @@ if not State then
 	State.Parent = USARF
 end
 
-local Services = ServerScriptService
-	:WaitForChild("USARF")
-	:WaitForChild("Services")
+local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
 
-local CmdrPermissionService = require(
-	Services:WaitForChild("CmdrPermissionService")
-)
+local CmdrPermissionService = require(Services:WaitForChild("CmdrPermissionService"))
 
 local registry = MemoryStoreService:GetSortedMap(REGISTRY_NAME)
 local bootstrapMap = MemoryStoreService:GetSortedMap(BOOTSTRAP_NAME)
@@ -66,28 +62,14 @@ local function getOrCreate(parent, className, name)
 	return object
 end
 
-local GetEventServerStatus = getOrCreate(
-	Remotes,
-	"RemoteFunction",
-	"GetEventServerStatus"
-)
+local GetEventServerStatus = getOrCreate(Remotes, "RemoteFunction", "GetEventServerStatus")
 
-local EventServerStatusChanged = getOrCreate(
-	Remotes,
-	"RemoteEvent",
-	"EventServerStatusChanged"
-)
+local EventServerStatusChanged = getOrCreate(Remotes, "RemoteEvent", "EventServerStatusChanged")
 
-local MenuPayloadChanged = getOrCreate(
-	Remotes,
-	"RemoteEvent",
-	"MenuPayloadChanged"
-)
+local MenuPayloadChanged = getOrCreate(Remotes, "RemoteEvent", "MenuPayloadChanged")
 
 local function clean(value)
-	return tostring(value or "")
-		:gsub("^%s+", "")
-		:gsub("%s+$", "")
+	return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 local function updateReplicatedState()
@@ -136,9 +118,6 @@ local function publicPacket(record)
 		maxPlayers = tonumber(record.maxPlayers) or Players.MaxPlayers,
 		enabledAt = record.enabledAt,
 		enabledBy = record.enabledBy,
-
-		-- These are calculated on the server. The client must not read
-		-- DataModel.PrivateServerId directly.
 		isCurrentServer = currentEventServer,
 		isMainPublicServer = currentPrivateId == "",
 	}
@@ -158,10 +137,7 @@ local function getInternalRecord()
 		return nil
 	end
 
-	if type(result) ~= "table"
-		or result.enabled ~= true
-		or (tonumber(result.expiresAt) or 0) <= os.time()
-	then
+	if type(result) ~= "table" or result.enabled ~= true or (tonumber(result.expiresAt) or 0) <= os.time() then
 		return nil
 	end
 
@@ -183,12 +159,7 @@ end
 
 local function writeRegistry(record, ttl)
 	local success, result = pcall(function()
-		registry:SetAsync(
-			REGISTRY_KEY,
-			record,
-			ttl,
-			tonumber(record.updatedAt) or os.time()
-		)
+		registry:SetAsync(REGISTRY_KEY, record, ttl, tonumber(record.updatedAt) or os.time())
 	end)
 
 	if not success then
@@ -215,11 +186,11 @@ local function removeRegistryEntry(expectedPrivateServerId)
 		current = registry:GetAsync(REGISTRY_KEY)
 	end)
 
-	if type(current) == "table"
+	if
+		type(current) == "table"
 		and expectedPrivateServerId
 		and expectedPrivateServerId ~= ""
-		and tostring(current.privateServerId or "")
-		~= tostring(expectedPrivateServerId)
+		and tostring(current.privateServerId or "") ~= tostring(expectedPrivateServerId)
 	then
 		return
 	end
@@ -238,10 +209,7 @@ local function startHeartbeat()
 	local generation = heartbeatGeneration
 
 	task.spawn(function()
-		while enabled
-			and isEventHost
-			and heartbeatGeneration == generation
-		do
+		while enabled and isEventHost and heartbeatGeneration == generation do
 			publishHeartbeat()
 			task.wait(HEARTBEAT_INTERVAL)
 		end
@@ -266,18 +234,13 @@ end
 local function handleControlMessage(message)
 	local data = message and message.Data
 
-	if type(data) ~= "table"
-		or data.action ~= "disable"
-		or not isEventHost
-	then
+	if type(data) ~= "table" or data.action ~= "disable" or not isEventHost then
 		return
 	end
 
 	local targetPrivateId = tostring(data.privateServerId or "")
 
-	if targetPrivateId ~= ""
-		and targetPrivateId ~= tostring(game.PrivateServerId)
-	then
+	if targetPrivateId ~= "" and targetPrivateId ~= tostring(game.PrivateServerId) then
 		return
 	end
 
@@ -285,9 +248,7 @@ local function handleControlMessage(message)
 end
 
 local function tryBootstrapReservedHost()
-	if game.PrivateServerId == ""
-		or game.PrivateServerOwnerId ~= 0
-	then
+	if game.PrivateServerId == "" or game.PrivateServerOwnerId ~= 0 then
 		return false
 	end
 
@@ -300,10 +261,7 @@ local function tryBootstrapReservedHost()
 		return false
 	end
 
-	if type(bootstrap) ~= "table"
-		or type(bootstrap.accessCode) ~= "string"
-		or bootstrap.accessCode == ""
-	then
+	if type(bootstrap) ~= "table" or type(bootstrap.accessCode) ~= "string" or bootstrap.accessCode == "" then
 		return false
 	end
 
@@ -329,10 +287,7 @@ local function tryBootstrapReservedHost()
 	startHeartbeat()
 	broadcastStatus()
 
-	print(
-		"[EventServerService] Reserved event host activated:",
-		displayName
-	)
+	print("[EventServerService] Reserved event host activated:", displayName)
 
 	return true
 end
@@ -371,18 +326,15 @@ function EventServerService.CreateReservedEventServer(executor)
 	local existing = getInternalRecord()
 
 	if existing then
-		return false, "An event server is already enabled: "
-			.. tostring(existing.name or DEFAULT_EVENT_NAME)
+		return false, "An event server is already enabled: " .. tostring(existing.name or DEFAULT_EVENT_NAME)
 	end
 
-	local success, reservedCode, reservedPrivateServerId =
-		pcall(function()
-			return TeleportService:ReserveServerAsync(game.PlaceId)
-		end)
+	local success, reservedCode, reservedPrivateServerId = pcall(function()
+		return TeleportService:ReserveServerAsync(game.PlaceId)
+	end)
 
 	if not success then
-		return false, "Unable to reserve an event server: "
-			.. tostring(reservedCode)
+		return false, "Unable to reserve an event server: " .. tostring(reservedCode)
 	end
 
 	local createdAt = os.time()
@@ -397,17 +349,11 @@ function EventServerService.CreateReservedEventServer(executor)
 	}
 
 	local storedBootstrap, bootstrapError = pcall(function()
-		bootstrapMap:SetAsync(
-			reservedPrivateServerId,
-			bootstrap,
-			BOOTSTRAP_TTL,
-			createdAt
-		)
+		bootstrapMap:SetAsync(reservedPrivateServerId, bootstrap, BOOTSTRAP_TTL, createdAt)
 	end)
 
 	if not storedBootstrap then
-		return false, "Unable to prepare the event server: "
-			.. tostring(bootstrapError)
+		return false, "Unable to prepare the event server: " .. tostring(bootstrapError)
 	end
 
 	local pendingRecord = {
@@ -426,16 +372,14 @@ function EventServerService.CreateReservedEventServer(executor)
 		accessCode = reservedCode,
 	}
 
-	local storedRecord, recordError =
-		writeRegistry(pendingRecord, PENDING_TTL)
+	local storedRecord, recordError = writeRegistry(pendingRecord, PENDING_TTL)
 
 	if not storedRecord then
 		pcall(function()
 			bootstrapMap:RemoveAsync(reservedPrivateServerId)
 		end)
 
-		return false, "Unable to publish the event server: "
-			.. tostring(recordError)
+		return false, "Unable to publish the event server: " .. tostring(recordError)
 	end
 
 	broadcastStatus()
@@ -468,16 +412,10 @@ function EventServerService.DisableActiveEventServer(executor)
 	end)
 
 	if not published then
-		warn(
-			"[EventServerService] Disable message failed:",
-			publishError
-		)
+		warn("[EventServerService] Disable message failed:", publishError)
 	end
 
-	if isEventHost
-		and tostring(active.privateServerId or "")
-		== tostring(game.PrivateServerId)
-	then
+	if isEventHost and tostring(active.privateServerId or "") == tostring(game.PrivateServerId) then
 		disableLocalHost()
 	else
 		broadcastStatus()
@@ -524,18 +462,12 @@ function EventServerService.SetActiveDisplayName(value)
 
 	if active.privateServerId then
 		pcall(function()
-			local bootstrap =
-				bootstrapMap:GetAsync(active.privateServerId)
+			local bootstrap = bootstrapMap:GetAsync(active.privateServerId)
 
 			if type(bootstrap) == "table" then
 				bootstrap.name = value
 
-				bootstrapMap:SetAsync(
-					active.privateServerId,
-					bootstrap,
-					BOOTSTRAP_TTL,
-					os.time()
-				)
+				bootstrapMap:SetAsync(active.privateServerId, bootstrap, BOOTSTRAP_TTL, os.time())
 			end
 		end)
 	end
@@ -548,9 +480,7 @@ function EventServerService.SetActiveDisplayName(value)
 end
 
 function EventServerService.ClearDisplayName()
-	return EventServerService.SetActiveDisplayName(
-		DEFAULT_EVENT_NAME
-	)
+	return EventServerService.SetActiveDisplayName(DEFAULT_EVENT_NAME)
 end
 
 function EventServerService.GetEventLink()
@@ -560,9 +490,7 @@ function EventServerService.GetEventLink()
 		return nil, "No event server is currently active."
 	end
 
-	if type(active.accessCode) ~= "string"
-		or active.accessCode == ""
-	then
+	if type(active.accessCode) ~= "string" or active.accessCode == "" then
 		return nil, "The event server access code is unavailable."
 	end
 
@@ -578,16 +506,13 @@ function EventServerService.CanBypassTeamLocks(player)
 		return false
 	end
 
-	local _, levelValue =
-		CmdrPermissionService.GetAdminLevel(player)
+	local _, levelValue = CmdrPermissionService.GetAdminLevel(player)
 
 	return (tonumber(levelValue) or 0) >= 4
 end
 
 function EventServerService.IsTeamLocked(teamKey)
-	return isEventHost
-		and enabled
-		and lockedTeams[teamKey] == true
+	return isEventHost and enabled and lockedTeams[teamKey] == true
 end
 
 function EventServerService.SetTeamLocked(teamKey, value)
@@ -649,19 +574,13 @@ function EventServerService.Start()
 	end
 
 	local subscribed, result = pcall(function()
-		return MessagingService:SubscribeAsync(
-			CONTROL_TOPIC,
-			handleControlMessage
-		)
+		return MessagingService:SubscribeAsync(CONTROL_TOPIC, handleControlMessage)
 	end)
 
 	if subscribed then
 		controlSubscription = result
 	else
-		warn(
-			"[EventServerService] Control subscription failed:",
-			result
-		)
+		warn("[EventServerService] Control subscription failed:", result)
 	end
 
 	tryBootstrapReservedHost()
@@ -680,9 +599,7 @@ function EventServerService.Start()
 
 	game:BindToClose(function()
 		if isEventHost and enabled then
-			removeRegistryEntry(
-				privateServerId or game.PrivateServerId
-			)
+			removeRegistryEntry(privateServerId or game.PrivateServerId)
 		end
 
 		if controlSubscription then

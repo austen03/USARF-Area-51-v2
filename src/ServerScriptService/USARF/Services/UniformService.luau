@@ -21,27 +21,22 @@ local TemplateFolder = UniformAssets:WaitForChild("Templates")
 local UniformService = {}
 
 local started = false
-local connections: {RBXScriptConnection} = {}
-local playerConnections: {[Player]: {RBXScriptConnection}} = {}
-local applyGenerations: {[Player]: number} = {}
-local originalDescriptions: {[Player]: HumanoidDescription} = {}
+local connections: { RBXScriptConnection } = {}
+local playerConnections: { [Player]: { RBXScriptConnection } } = {}
+local applyGenerations: { [Player]: number } = {}
+local originalDescriptions: { [Player]: HumanoidDescription } = {}
 
--- Morphs are laid out per team (the "Folder" in UniformConfig.Teams):
--- 	ServerStorage.Morphs.Classes.<Folder>.<MorphName>     the uniform itself
--- 	ServerStorage.Morphs.SubClasses.<Folder>.<MorphName>  layered over the class
 local CLASS_FOLDER_NAME = "Classes"
 local SUB_CLASS_FOLDER_NAME = "SubClasses"
 
--- Admin-set loadouts (the `loadout` command). Any field left nil falls back to
--- the normal team/rank logic. Kept across respawns, dropped on team change.
 export type Loadout = {
-	Cleared: boolean?, -- no class uniform; the player keeps their own avatar
-	Division: string?, -- UniformConfig.Teams key, or a bare Morphs.Classes folder name
-	Class: string?, -- morph in the division's Classes folder, instead of the rank's
-	SubClass: string?, -- morph in the division's SubClasses folder
+	Cleared: boolean?,
+	Division: string?,
+	Class: string?,
+	SubClass: string?,
 }
 
-local loadouts: {[Player]: Loadout} = {}
+local loadouts: { [Player]: Loadout } = {}
 
 local ATTACHMENT_FOLDER_NAME = "USARFUniformAttachments"
 local MORPH_ITEM_ATTRIBUTE = "USARFMorphItem"
@@ -59,24 +54,26 @@ local DEFAULT_PATCH_SURFACE_HEIGHT = 0.42
 local DEFAULT_RANK_TAB_SURFACE_WIDTH = 0.38
 local DEFAULT_RANK_TAB_SURFACE_HEIGHT = 0.18
 
--- Pushes SurfaceGui holders out from the R15 arm so they do not sit inside the sleeve morph.
 local DEFAULT_PATCH_DEPTH_OFFSET = 0.28
 local DEFAULT_RANK_TAB_DEPTH_OFFSET = 0.28
 
--- Used when an insignia snaps to the body-part surface (UniformConfig.SnapInsigniaToSurface).
 local DEFAULT_INSIGNIA_SURFACE_GAP = 0.004
 
--- Points (in half-widths / half-heights of the insignia) sampled when measuring the
--- body-part surface underneath it: center, corners and edge midpoints.
 local SURFACE_SAMPLE_POINTS = {
 	Vector2.new(0, 0),
-	Vector2.new(-1, -1), Vector2.new(1, -1), Vector2.new(-1, 1), Vector2.new(1, 1),
-	Vector2.new(0, -1), Vector2.new(0, 1), Vector2.new(-1, 0), Vector2.new(1, 0),
+	Vector2.new(-1, -1),
+	Vector2.new(1, -1),
+	Vector2.new(-1, 1),
+	Vector2.new(1, 1),
+	Vector2.new(0, -1),
+	Vector2.new(0, 1),
+	Vector2.new(-1, 0),
+	Vector2.new(1, 0),
 }
 
 local APPLY_DELAY_SECONDS = 0.35
 
-local BODY_PART_ALIASES: {[string]: string} = {
+local BODY_PART_ALIASES: { [string]: string } = {
 	Head = "Head",
 	Hair = "Head",
 	Hat = "Head",
@@ -129,7 +126,7 @@ export type PatchDefinition = {
 	DepthOffset: number?,
 	FlipOutward: boolean?,
 	AlwaysOnTop: boolean?,
-	ImageRect: {number}?,
+	ImageRect: { number }?,
 	PreserveAspect: boolean?,
 	SnapToSurface: boolean?,
 	SurfaceGap: number?,
@@ -163,9 +160,7 @@ local function getAssetIdNumber(texture: any): number?
 	return tonumber(string.match(tostring(texture), "(%d+)%s*$"))
 end
 
--- { x, y, width, height } of the visible insignia inside its image, from the patch
--- definition or UniformConfig.ImageRects (keyed by asset id).
-local function getImageRect(patchInfo: PatchDefinition): {number}?
+local function getImageRect(patchInfo: PatchDefinition): { number }?
 	if patchInfo.ImageRect then
 		return patchInfo.ImageRect
 	end
@@ -397,8 +392,8 @@ local function chooseOutsideFace(targetPartName: string?, offset: Vector3?, expl
 	return Enum.NormalId.Right
 end
 
-local function getSurfaceGuis(holderPart: BasePart): {SurfaceGui}
-	local surfaceGuis: {SurfaceGui} = {}
+local function getSurfaceGuis(holderPart: BasePart): { SurfaceGui }
+	local surfaceGuis: { SurfaceGui } = {}
 
 	for _, child in holderPart:GetChildren() do
 		if child:IsA("SurfaceGui") then
@@ -435,8 +430,6 @@ local function configureImageLabel(imageLabel: ImageLabel, image: string, patchI
 	imageLabel.ScaleType = patchInfo.ScaleType or Enum.ScaleType.Stretch
 	imageLabel.ZIndex = 1
 
-	-- Crop away the image's transparent padding; the holder is sized to the crop's
-	-- proportions (see scaleHolderPart), so stretching it keeps the true shape.
 	local imageRect = getImageRect(patchInfo)
 
 	if imageRect then
@@ -466,7 +459,9 @@ local function configureSurfaceGuis(holderPart: BasePart, patchInfo: PatchDefini
 
 		surfaceGui.Adornee = holderPart
 		surfaceGui.Enabled = true
-		surfaceGui.AlwaysOnTop = if patchInfo.AlwaysOnTop ~= nil then patchInfo.AlwaysOnTop else TEST_PATCH_ALWAYS_ON_TOP
+		surfaceGui.AlwaysOnTop = if patchInfo.AlwaysOnTop ~= nil
+			then patchInfo.AlwaysOnTop
+			else TEST_PATCH_ALWAYS_ON_TOP
 		surfaceGui.LightInfluence = DEFAULT_SURFACE_LIGHT_INFLUENCE
 		surfaceGui.PixelsPerStud = math.max(patchInfo.PixelsPerStud or DEFAULT_PIXELS_PER_STUD, DEFAULT_PIXELS_PER_STUD)
 		surfaceGui.Face = Enum.NormalId.Front
@@ -510,8 +505,6 @@ local function scaleHolderPart(holderPart: BasePart, patchInfo: PatchDefinition,
 	local width = patchInfo.SurfaceWidth or defaultWidth
 	local height = patchInfo.SurfaceHeight or defaultHeight
 
-	-- Fit the insignia's real proportions inside SurfaceWidth x SurfaceHeight so it is
-	-- never squashed or stretched.
 	local imageRect = getImageRect(patchInfo)
 
 	if imageRect and patchInfo.PreserveAspect ~= false and imageRect[3] > 0 and imageRect[4] > 0 then
@@ -581,7 +574,11 @@ local function getCharacterOutwardWorld(targetPart: BasePart): Vector3?
 	return outward.Unit
 end
 
-local function getCorrectedOutwardLocal(targetPart: BasePart, outwardLocal: Vector3, patchInfo: PatchDefinition): Vector3
+local function getCorrectedOutwardLocal(
+	targetPart: BasePart,
+	outwardLocal: Vector3,
+	patchInfo: PatchDefinition
+): Vector3
 	if patchInfo.FlipOutward then
 		return -outwardLocal
 	end
@@ -620,10 +617,6 @@ local function shouldSnapToSurface(patchInfo: PatchDefinition): boolean
 	return configValue(nil, "SnapInsigniaToSurface", true) ~= false
 end
 
--- How far the target part's outer surface is from planePoint along outwardWorld,
--- sampled under the whole insignia. The most outward hit wins, so a flat insignia never
--- sinks into a rounded arm. Falls back to the part's bounding box if nothing is hit
--- (e.g. the part has CanQuery off).
 local function measureSurfaceDistance(
 	targetPart: BasePart,
 	planePoint: Vector3,
@@ -641,7 +634,8 @@ local function measureSurfaceDistance(
 	local furthest: number? = nil
 
 	for _, sample in SURFACE_SAMPLE_POINTS do
-		local point = planePoint + orientation:VectorToWorldSpace(Vector3.new(sample.X * width / 2, sample.Y * height / 2, 0))
+		local point = planePoint
+			+ orientation:VectorToWorldSpace(Vector3.new(sample.X * width / 2, sample.Y * height / 2, 0))
 		local result = workspace:Raycast(point + outwardWorld * reach, -outwardWorld * reach, params)
 
 		if result then
@@ -660,7 +654,13 @@ local function measureSurfaceDistance(
 	return math.abs(outwardLocal:Dot(targetPart.Size)) / 2
 end
 
-local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefinition, targetPartName: string?, defaultTemplateName: string, holderPart: BasePart): CFrame
+local function getPlacementCFrame(
+	targetPart: BasePart,
+	patchInfo: PatchDefinition,
+	targetPartName: string?,
+	defaultTemplateName: string,
+	holderPart: BasePart
+): CFrame
 	if patchInfo.CFrameOffset then
 		return targetPart.CFrame * patchInfo.CFrameOffset
 	end
@@ -675,11 +675,10 @@ local function getPlacementCFrame(targetPart: BasePart, patchInfo: PatchDefiniti
 		upWorld = targetPart.CFrame.RightVector
 	end
 
-	local orientation = CFrame.lookAt(Vector3.zero, outwardWorld, upWorld) * CFrame.Angles(0, 0, getRollRadians(patchInfo.Rotation))
+	local orientation = CFrame.lookAt(Vector3.zero, outwardWorld, upWorld)
+		* CFrame.Angles(0, 0, getRollRadians(patchInfo.Rotation))
 
 	if shouldSnapToSurface(patchInfo) then
-		-- Offset only sets where along the surface the insignia goes; how far out it sits
-		-- comes from the wearer's actual body part, so it is flush on any avatar.
 		local inPlaneOffset = offset - outwardLocal * offset:Dot(outwardLocal)
 		local planePoint = (targetPart.CFrame * CFrame.new(inPlaneOffset)).Position
 		local surfaceDistance = measureSurfaceDistance(
@@ -716,7 +715,12 @@ local function weldHolderToTarget(holderPart: BasePart, targetPart: BasePart)
 	weld.Parent = holderPart
 end
 
-local function attachSurfaceGuiTemplate(character: Model, patchInfo: PatchDefinition, defaultTemplateName: string, attachmentName: string): Instance?
+local function attachSurfaceGuiTemplate(
+	character: Model,
+	patchInfo: PatchDefinition,
+	defaultTemplateName: string,
+	attachmentName: string
+): Instance?
 	local targetPartName = patchInfo.Target
 
 	if not targetPartName or targetPartName == "" then
@@ -770,7 +774,11 @@ local function attachSurfaceGuiTemplate(character: Model, patchInfo: PatchDefini
 	return clone
 end
 
-local function normalizePatchDefinition(value: any, textureLookup: {[any]: any}?, defaults: PatchDefinition?): PatchDefinition?
+local function normalizePatchDefinition(
+	value: any,
+	textureLookup: { [any]: any }?,
+	defaults: PatchDefinition?
+): PatchDefinition?
 	if typeof(value) ~= "table" then
 		return nil
 	end
@@ -804,7 +812,7 @@ local function normalizePatchDefinition(value: any, textureLookup: {[any]: any}?
 	return patchInfo :: PatchDefinition
 end
 
-local function attachConfiguredPatches(character: Model, patches: any, textureLookup: {[any]: any}?)
+local function attachConfiguredPatches(character: Model, patches: any, textureLookup: { [any]: any }?)
 	if typeof(patches) ~= "table" then
 		return
 	end
@@ -846,7 +854,6 @@ local function getRankTabTexture(player: Player?, teamConfig: any, rankTabs: any
 
 	local groupId = rankTabs.GroupId or rankTabs.GroupID or teamConfig.GroupId or teamConfig.GroupID
 
-	-- A loadout-forced uniform shows the rank tab for that uniform, not the wearer's rank.
 	local rank = if typeof(teamConfig.ForcedRank) == "number"
 		then teamConfig.ForcedRank
 		else getPlayerRankForUniform(player, groupId)
@@ -859,7 +866,13 @@ local function getRankTabTexture(player: Player?, teamConfig: any, rankTabs: any
 		or rankTabs.AssetId
 end
 
-local function attachConfiguredRankTabs(character: Model, teamConfig: any, rankTabs: any, textureLookup: {[any]: any}?, player: Player?)
+local function attachConfiguredRankTabs(
+	character: Model,
+	teamConfig: any,
+	rankTabs: any,
+	textureLookup: { [any]: any }?,
+	player: Player?
+)
 	if rankTabs == nil then
 		return
 	end
@@ -877,7 +890,15 @@ local function attachConfiguredRankTabs(character: Model, teamConfig: any, rankT
 		FlipOutward = teamConfig.RankTabFlipOutward,
 	}
 
-	if typeof(rankTabs) ~= "table" or rankTabs.GroupId or rankTabs.GroupID or rankTabs.Default or rankTabs.Texture or rankTabs.Image or rankTabs.AssetId then
+	if
+		typeof(rankTabs) ~= "table"
+		or rankTabs.GroupId
+		or rankTabs.GroupID
+		or rankTabs.Default
+		or rankTabs.Texture
+		or rankTabs.Image
+		or rankTabs.AssetId
+	then
 		local rankTabTexture = getRankTabTexture(player, teamConfig, rankTabs)
 
 		if rankTabTexture then
@@ -918,12 +939,11 @@ local function attachConfiguredRankTabs(character: Model, teamConfig: any, rankT
 	end
 end
 
-local function getTeamConfigs(): {[string]: any}
+local function getTeamConfigs(): { [string]: any }
 	local teams = UniformConfig.Teams or UniformConfig.TeamConfigs or UniformConfig.Uniforms
 	return if typeof(teams) == "table" then teams else {}
 end
 
--- The UniformConfig.Teams key for the requested team, or else the player's own team.
 local function resolveTeamKey(player: Player, requestedTeam: any?): any?
 	local teams = getTeamConfigs()
 
@@ -955,8 +975,6 @@ local function isLayerFolder(folder: Instance): boolean
 	return folder.Name == CLASS_FOLDER_NAME or folder.Name == SUB_CLASS_FOLDER_NAME
 end
 
--- A team's uniforms (its classes) live in Morphs.Classes.<Folder>.<MorphName>.
--- Morphs.<Folder> is still read so morphs keep working until they are moved.
 local function getClassFolder(folderName: string): Instance?
 	local classesFolder = MorphsFolder:FindFirstChild(CLASS_FOLDER_NAME)
 	local teamFolder = if classesFolder then classesFolder:FindFirstChild(folderName) else nil
@@ -974,7 +992,6 @@ local function getClassFolder(folderName: string): Instance?
 	return nil
 end
 
--- Sub classes are layered over a class: Morphs.SubClasses.<Folder>.<MorphName>.
 local function getSubClassFolder(folderName: string): Instance?
 	local subClassesFolder = MorphsFolder:FindFirstChild(SUB_CLASS_FOLDER_NAME)
 	return if subClassesFolder then subClassesFolder:FindFirstChild(folderName) else nil
@@ -1043,11 +1060,8 @@ local function variantMatchesPlayer(player: Player, variant: any): boolean
 		end
 	end
 
-	-- When a variant supplies a RankMap, only ranks represented by that map
-	-- select the variant unless AllowUnmappedRanks is explicitly enabled.
-	-- This keeps the A.I.G. command variant limited to ranks 8 and 9, while
-	-- task-force variants remain limited to their configured ranks 1 through 4.
-	if typeof(variant.RankMap) == "table"
+	if
+		typeof(variant.RankMap) == "table"
 		and variant.AllowUnmappedRanks ~= true
 		and resolveRankMapValue(variant.RankMap, rank) == nil
 	then
@@ -1161,7 +1175,7 @@ local function resolveMorphModel(player: Player, teamConfig: any): Instance?
 	return rankFolderOrModel
 end
 
-local function sortedMorphNames(folder: Instance?): {string}
+local function sortedMorphNames(folder: Instance?): { string }
 	local names = {}
 
 	if not folder then
@@ -1205,8 +1219,6 @@ local function findRankForMorph(rankMap: any, morphName: string): number?
 	return lowestRank
 end
 
--- A division is a UniformConfig team entry, or any other team folder in
--- Morphs.Classes (which then has no patches, rank tabs or rank-based default).
 local function getDivisionConfig(divisionName: string): any?
 	local teamConfig = getTeamConfigs()[divisionName]
 
@@ -1221,7 +1233,6 @@ local function getDivisionConfig(divisionName: string): any?
 	return nil
 end
 
--- Whether a division can pick a uniform on its own, without a class being named.
 local function hasDefaultClass(divisionConfig: any): boolean
 	return divisionConfig.Morph ~= nil
 		or divisionConfig.MorphName ~= nil
@@ -1252,9 +1263,6 @@ local function findMorphIn(folder: Instance?, morphName: string?): Instance?
 	return if morph and isMorph(morph) then morph else nil
 end
 
--- The config for wearing class `className` from a division: the variant whose
--- RankMap lists that class (so its patches come along), with the morph and the
--- rank tab pinned to that class instead of the wearer's own group rank.
 local function resolveDivisionConfig(divisionName: string, className: string): any?
 	local baseConfig = getDivisionConfig(divisionName)
 
@@ -1289,8 +1297,7 @@ local function resolveDivisionConfig(divisionName: string, className: string): a
 	return resolvedConfig
 end
 
--- UniformConfig teams that have morphs, then any unconfigured team folders.
-local function getDivisionNames(): {string}
+local function getDivisionNames(): { string }
 	local names = {}
 	local usedFolders = {}
 
@@ -1334,8 +1341,7 @@ local function getDivisionNames(): {string}
 	return names
 end
 
--- Classes in rank order (as the RankMaps list them), then any other morphs in the folder.
-local function getDivisionClassNames(divisionName: string): {string}
+local function getDivisionClassNames(divisionName: string): { string }
 	local divisionConfig = getDivisionConfig(divisionName)
 	local folder = getDivisionClassFolder(divisionName)
 	local names = {}
@@ -1552,10 +1558,6 @@ local function isClothing(instance: Instance): boolean
 	return instance:IsA("Shirt") or instance:IsA("Pants") or instance:IsA("ShirtGraphic")
 end
 
--- Sub class morphs go on top of whatever is already worn. A layer piece replaces
--- the worn morph piece of the same name (a sub class "Hair" helmet removes the
--- class's "Hair" beret), and clothing in the layer only replaces the matching
--- piece, so a layer with just a Shirt keeps the class's pants.
 local function applyLayerMorph(character: Model, humanoid: Humanoid, layerMorph: Instance)
 	for _, layerPiece in getMorphPartsContainer(layerMorph):GetChildren() do
 		if layerPiece.Name ~= "Clothing" then
@@ -1699,7 +1701,11 @@ function UniformService.AttachPatch(character: Model, patchInfo: PatchDefinition
 	return attachSurfaceGuiTemplate(character, patchInfo, DEFAULT_PATCH_TEMPLATE, attachmentName or "Patch")
 end
 
-function UniformService.AttachRankTab(character: Model, rankTabInfo: PatchDefinition, attachmentName: string?): Instance?
+function UniformService.AttachRankTab(
+	character: Model,
+	rankTabInfo: PatchDefinition,
+	attachmentName: string?
+): Instance?
 	return attachSurfaceGuiTemplate(character, rankTabInfo, DEFAULT_RANK_TAB_TEMPLATE, attachmentName or "RankTab")
 end
 
@@ -1710,13 +1716,8 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		return
 	end
 
-	-- Restore the player's canonical Roblox avatar before deciding whether the
-	-- newly selected team needs a uniform. This gives unconfigured teams, such
-	-- as PMC, their original clothing and accessories back.
 	restoreOriginalAppearance(player, character)
 
-	-- Covert players wear the Test Subject team's outfit, without loadout overrides
-	-- and (by default) without their avatar accessories, so they aren't recognised.
 	if CovertState.IsCovert(player) then
 		local testSubjectTeam = USARFConfig.Teams[CovertConfig.TeamKey]
 		local outfit = shallowCopy(testSubjectTeam and getTeamConfigs()[testSubjectTeam.teamName])
@@ -1727,10 +1728,10 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		return
 	end
 
-	-- An admin-set loadout can swap the division and/or class (or remove the class
-	-- uniform, when cleared); anything it leaves unset comes from the team and rank.
 	local loadout = loadouts[player]
-	local divisionName = if loadout and loadout.Division then loadout.Division else resolveTeamKey(player, requestedTeam)
+	local divisionName = if loadout and loadout.Division
+		then loadout.Division
+		else resolveTeamKey(player, requestedTeam)
 	local teamConfig: any = nil
 	local morphModel: Instance? = nil
 
@@ -1751,7 +1752,6 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		then findMorphIn(getDivisionSubClassFolder(divisionName), loadout.SubClass)
 		else nil
 
-	-- Teams with no morph folder (e.g. Test Subject) can still set clothing.
 	local clothingOnly = not morphModel
 		and typeof(teamConfig) == "table"
 		and teamConfig.Clothing ~= nil
@@ -1923,8 +1923,6 @@ function UniformService.GetLoadout(player: Player): Loadout?
 	return if loadout then table.clone(loadout) else nil
 end
 
--- Sets a player's loadout (nil goes back to the normal team/rank uniform) and
--- re-dresses them straight away. Without a character it applies on next spawn.
 function UniformService.SetLoadout(player: Player, loadout: Loadout?): (boolean, string?)
 	if loadout then
 		local valid, errorMessage = validateLoadout(player, loadout)
@@ -1955,13 +1953,10 @@ function UniformService.ReapplyUniform(player: Player): boolean
 end
 
 local function handleTeamChanged(player: Player)
-	-- A loadout belongs to the team it was set on; the new team gets its own uniform.
 	loadouts[player] = nil
 	publishLoadoutAttributes(player, nil)
 	player:SetAttribute("USARF_UniformDivision", resolveTeamKey(player, nil))
 
-	-- Cancel any delayed application from the previous team and immediately
-	-- clear the old morph before the menu or spawn system does anything else.
 	invalidatePendingApply(player)
 	UniformService.ClearPlayerUniform(player)
 
@@ -1989,26 +1984,39 @@ end
 local function connectPlayer(player: Player)
 	disconnectPlayerConnections(player)
 
-	local newConnections: {RBXScriptConnection} = {}
+	local newConnections: { RBXScriptConnection } = {}
 
-	table.insert(newConnections, player.CharacterAdded:Connect(function(character)
-		invalidatePendingApply(player)
-		UniformService.ClearMorph(character)
+	table.insert(
+		newConnections,
+		player.CharacterAdded:Connect(function(character)
+			invalidatePendingApply(player)
+			UniformService.ClearMorph(character)
 
-		local teamConfig = resolveTeamConfig(player, nil)
+			local teamConfig = resolveTeamConfig(player, nil)
 
-		if loadouts[player] or CovertState.IsCovert(player) or (teamConfig and configValue(teamConfig, "ApplyOnSpawn", true)) then
-			applyUniformDeferred(player)
-		end
-	end))
+			if
+				loadouts[player]
+				or CovertState.IsCovert(player)
+				or (teamConfig and configValue(teamConfig, "ApplyOnSpawn", true))
+			then
+				applyUniformDeferred(player)
+			end
+		end)
+	)
 
-	table.insert(newConnections, player:GetPropertyChangedSignal("Team"):Connect(function()
-		handleTeamChanged(player)
-	end))
+	table.insert(
+		newConnections,
+		player:GetPropertyChangedSignal("Team"):Connect(function()
+			handleTeamChanged(player)
+		end)
+	)
 
-	table.insert(newConnections, player:GetPropertyChangedSignal("TeamColor"):Connect(function()
-		handleTeamChanged(player)
-	end))
+	table.insert(
+		newConnections,
+		player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+			handleTeamChanged(player)
+		end)
+	)
 
 	playerConnections[player] = newConnections
 

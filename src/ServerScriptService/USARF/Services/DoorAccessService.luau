@@ -97,6 +97,8 @@ function DoorAccessService.RegisterDoor(door)
 		return false
 	end
 
+	local moving = door:FindFirstChild("Moving")
+
 	local data = {
 		Model = door,
 		Settings = settings,
@@ -104,6 +106,7 @@ function DoorAccessService.RegisterDoor(door)
 		Locked = settings.locked == true or settings.Locked == true,
 		Busy = false,
 		ClosedCFrames = getBasePartCFrameMap(door),
+		ClosedMovingPivot = if moving and moving:IsA("Model") then moving:GetPivot() else nil,
 	}
 
 	doors[door] = data
@@ -270,28 +273,30 @@ local function animateRegularExtra(data, open)
 	local bar = moving:FindFirstChild("Bar")
 	local bolts = moving:FindFirstChild("Bolts")
 
-	if bar and bar:IsA("BasePart") then
-		local closed = data.ClosedCFrames[bar] or bar.CFrame
+	local function restingCFrame(part)
+		local closed = data.ClosedCFrames[part] or part.CFrame
 
-		tween(
-			bar,
-			TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
-			{
-				CFrame = open and closed * CFrame.new(0, 0, -0.1) or closed,
-			}
-		)
+		if not data.ClosedMovingPivot or not moving:IsA("Model") then
+			return closed
+		end
+
+		return moving:GetPivot() * data.ClosedMovingPivot:ToObjectSpace(closed)
+	end
+
+	if bar and bar:IsA("BasePart") then
+		local resting = restingCFrame(bar)
+
+		tween(bar, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
+			CFrame = open and resting * CFrame.new(0, 0, -0.1) or resting,
+		})
 	end
 
 	if bolts and bolts:IsA("BasePart") then
-		local closed = data.ClosedCFrames[bolts] or bolts.CFrame
+		local resting = restingCFrame(bolts)
 
-		tween(
-			bolts,
-			TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
-			{
-				CFrame = open and closed * CFrame.new(0, 0, 0.4) or closed,
-			}
-		)
+		tween(bolts, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
+			CFrame = open and resting * CFrame.new(0, 0, 0.4) or resting,
+		})
 	end
 end
 
@@ -502,9 +507,7 @@ function DoorAccessService.ToggleOpen(player, door)
 		setClientState(player, "idle")
 	end)
 
-	local autoClose =
-		data.Settings.autoClose
-		or data.Settings.AutoClose
+	local autoClose = data.Settings.autoClose or data.Settings.AutoClose
 
 	if autoClose ~= false then
 		task.delay(data.Settings.autoCloseTime or data.Settings.AutoCloseTime or AUTO_CLOSE_DEFAULT, function()

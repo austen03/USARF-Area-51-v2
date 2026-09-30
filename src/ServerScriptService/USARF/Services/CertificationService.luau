@@ -1,9 +1,3 @@
--- Certifications (e.g. "Covert") granted to players.
---
--- The Discord bot is the source of truth. The Google Sheet is read only when the
--- bot can't be reached, so a certification removed in Discord is never granted
--- back by a stale sheet row.
-
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -17,21 +11,20 @@ local DiscordBotBridge = require(Services:WaitForChild("DiscordBotBridge"))
 local CertificationService = {}
 
 type Entry = {
-	List: {string},
-	Set: {[string]: boolean},
+	List: { string },
+	Set: { [string]: boolean },
 	Source: string,
 	FetchedAt: number,
 }
 
-local entries: {[Player]: Entry} = {}
-local fetching: {[Player]: boolean} = {}
+local entries: { [Player]: Entry } = {}
+local fetching: { [Player]: boolean } = {}
 
-local sheetMap: {[number]: {string}}? = nil
+local sheetMap: { [number]: { string } }? = nil
 local sheetFetchedAt = -math.huge
 
 local changed = Instance.new("BindableEvent")
 
--- Fires (player) when a player's certifications change after a refresh.
 CertificationService.Changed = changed.Event
 
 local started = false
@@ -44,7 +37,7 @@ local function normalizeKey(value: any): string
 	return (string.gsub(string.lower(tostring(value)), "[%s:_]", ""))
 end
 
-local function parseList(value: any): {string}
+local function parseList(value: any): { string }
 	local list = {}
 
 	if typeof(value) == "table" then
@@ -66,8 +59,7 @@ local function parseList(value: any): {string}
 	return list
 end
 
--- Matched ignoring case, spaces, "_" and ":" so "Roblox UserId:" still works.
-local function getRowValue(row: {[string]: any}, keys: {string}): any
+local function getRowValue(row: { [string]: any }, keys: { string }): any
 	for rowKey, value in row do
 		local normalizedRowKey = normalizeKey(rowKey)
 
@@ -81,8 +73,7 @@ local function getRowValue(row: {[string]: any}, keys: {string}): any
 	return nil
 end
 
--- Returns the list, or nil if the bot could not answer.
-local function fetchFromBot(userId: number): {string}?
+local function fetchFromBot(userId: number): { string }?
 	local result = DiscordBotBridge.Request(CertificationConfig.BotPath .. tostring(userId), "GET", nil)
 
 	if not result or not result.ok or typeof(result.data) ~= "table" then
@@ -99,7 +90,7 @@ local function fetchFromBot(userId: number): {string}?
 	return parseList(certifications)
 end
 
-local function loadSheet(): {[number]: {string}}?
+local function loadSheet(): { [number]: { string } }?
 	if os.clock() - sheetFetchedAt < CertificationConfig.SheetCacheSeconds then
 		return sheetMap
 	end
@@ -140,7 +131,7 @@ local function loadSheet(): {[number]: {string}}?
 	return sheetMap
 end
 
-local function makeEntry(list: {string}, source: string): Entry
+local function makeEntry(list: { string }, source: string): Entry
 	local set = {}
 
 	for _, name in list do
@@ -170,8 +161,6 @@ local function sameSet(a: Entry?, b: Entry): boolean
 	return true
 end
 
--- Fetches a player's certifications now (yields). Keeps the last known list if
--- neither the bot nor the sheet can be reached.
 function CertificationService.Refresh(player: Player): Entry?
 	if fetching[player] then
 		while fetching[player] and player.Parent do
@@ -227,8 +216,7 @@ function CertificationService.Has(player: Player, certification: string): boolea
 	return entry ~= nil and entry.Set[normalize(certification)] == true
 end
 
--- Returns the certification names and where they came from ("Discord", "Sheet" or "Unavailable").
-function CertificationService.Get(player: Player): ({string}, string)
+function CertificationService.Get(player: Player): ({ string }, string)
 	local entry = getEntry(player)
 
 	if not entry then
@@ -258,7 +246,6 @@ function CertificationService.Start()
 		task.spawn(CertificationService.Refresh, player)
 	end
 
-	-- Re-check everyone so certifications removed in Discord take effect in game.
 	task.spawn(function()
 		while true do
 			task.wait(CertificationConfig.RefreshSeconds)

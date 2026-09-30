@@ -7,7 +7,8 @@ local Config = USARF:WaitForChild("Config")
 
 local USARFConfig = require(Config:WaitForChild("USARFConfig"))
 
-local CovertState = require(ServerScriptService:WaitForChild("USARF"):WaitForChild("Services"):WaitForChild("CovertState"))
+local CovertState =
+	require(ServerScriptService:WaitForChild("USARF"):WaitForChild("Services"):WaitForChild("CovertState"))
 
 local PermissionService = {}
 
@@ -260,7 +261,6 @@ function PermissionService.GetTeamKey(player)
 	return USARFConfig.GetTeamKeyFromName(player.Team.Name)
 end
 
--- Covert players keep their home team's radio while playing as a Test Subject.
 local function getRadioTeamKey(player)
 	return CovertState.GetHomeTeamKey(player) or PermissionService.GetTeamKey(player)
 end
@@ -647,8 +647,7 @@ function PermissionService.CanSeeRedactedRadio(player)
 	local mainRank = PermissionService.GetMainRank(player)
 	local modRank = PermissionService.GetModRank(player)
 
-	return mainRank >= USARFConfig.Radio.RedactedViewerMainRank
-		or modRank == USARFConfig.Radio.RedactedViewerModRank
+	return mainRank >= USARFConfig.Radio.RedactedViewerMainRank or modRank == USARFConfig.Radio.RedactedViewerModRank
 end
 
 function PermissionService.Can(player, permissionName)

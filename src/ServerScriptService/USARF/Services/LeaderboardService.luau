@@ -172,9 +172,7 @@ local function getPlayerIcons(player)
 		table.insert(cleanIcons, {
 			name = icon.name,
 			image = icon.image,
-			color = colorToTable(
-				icon.color or Color3.fromRGB(255, 255, 255)
-			),
+			color = colorToTable(icon.color or Color3.fromRGB(255, 255, 255)),
 			size = icon.size or 22,
 		})
 	end
@@ -193,9 +191,7 @@ local function createTeamEntry(teamKey, order)
 end
 
 local function isModeratorViewer(viewer)
-	local levelValue = tonumber(
-		viewer and viewer:GetAttribute("USARF_CmdrAdminLevelValue")
-	) or 0
+	local levelValue = tonumber(viewer and viewer:GetAttribute("USARF_CmdrAdminLevelValue")) or 0
 
 	return levelValue >= MODERATOR_LEVEL_VALUE
 end
@@ -212,9 +208,6 @@ local function viewerCanSeeHiddenPlayer(viewer, target)
 	return isModeratorViewer(viewer)
 end
 
--- Name, username (for moderators' Copy Username), user id and icons a viewer
--- gets for a player. Covert players show their covert name; only moderators
--- (who get a covert icon) and the player themselves keep the real user id.
 local function getShownIdentity(viewer, player)
 	local covert = CovertState.Get(player)
 	local icons = getPlayerIcons(player)

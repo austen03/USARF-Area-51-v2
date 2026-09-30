@@ -17,7 +17,6 @@ local EconomyAnalyticsService = require(Services.EconomyAnalyticsService)
 
 local DEFAULT_DAILY_REWARD = {
 	CooldownSeconds = 86400,
-	-- If this much time passes since the last claim, the streak is lost and resets to Day 1.
 	StreakResetSeconds = 172800,
 	Rewards = {
 		[1] = { Cash = 250, Gold = 0 },
@@ -152,8 +151,6 @@ function DailyRewardService.GetStatus(player)
 	local elapsed = now - data.LastClaim
 	local remaining = math.max(0, cooldown - elapsed)
 	local canClaim = remaining <= 0
-
-	-- Missed a day: the streak no longer carries over.
 	local streak = data.Streak
 	if data.LastClaim > 0 and elapsed >= streakReset then
 		streak = 0

@@ -12,28 +12,20 @@ local Started = false
 local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
-local SuspensionService = require(
-	Services:WaitForChild("SuspensionService")
-)
+local SuspensionService = require(Services:WaitForChild("SuspensionService"))
 
-local TeamAccessService = require(
-	Services:WaitForChild("TeamAccessService")
-)
+local TeamAccessService = require(Services:WaitForChild("TeamAccessService"))
 
 local NotificationService = nil
 
 pcall(function()
-	NotificationService = require(
-		Services:WaitForChild("NotificationService")
-	)
+	NotificationService = require(Services:WaitForChild("NotificationService"))
 end)
 
 local DiscordBotBridge = nil
 
 pcall(function()
-	local bridgeModule = Services:FindFirstChild(
-		"DiscordBotBridge"
-	)
+	local bridgeModule = Services:FindFirstChild("DiscordBotBridge")
 
 	if bridgeModule then
 		DiscordBotBridge = require(bridgeModule)
@@ -49,11 +41,7 @@ local AREA_TARGET_MAP = {
 	["Entire Facility"] = "facility",
 }
 
-local function getOrCreate(
-	parent,
-	className,
-	name
-)
+local function getOrCreate(parent, className, name)
 	local object = parent:FindFirstChild(name)
 
 	if not object then
@@ -65,40 +53,22 @@ local function getOrCreate(
 	return object
 end
 
-local RemoteFolder = getOrCreate(
-	ReplicatedStorage,
-	"Folder",
-	REMOTE_FOLDER_NAME
-)
+local RemoteFolder = getOrCreate(ReplicatedStorage, "Folder", REMOTE_FOLDER_NAME)
 
-local UtilityRemote = getOrCreate(
-	RemoteFolder,
-	"RemoteEvent",
-	UTILITY_REMOTE_NAME
-)
+local UtilityRemote = getOrCreate(RemoteFolder, "RemoteEvent", UTILITY_REMOTE_NAME)
 
 local function clean(value)
-	return tostring(value or "")
-		:gsub("^%s+", "")
-		:gsub("%s+$", "")
+	return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 local function parseDuration(text)
-	text = string.lower(
-		clean(text)
-	):gsub("%s+", "")
+	text = string.lower(clean(text)):gsub("%s+", "")
 
-	if text == "0"
-		or text == "perm"
-		or text == "permanent"
-	then
+	if text == "0" or text == "perm" or text == "permanent" then
 		return 0
 	end
 
-	local number, unit = string.match(
-		text,
-		"^(%d+)([mhdw])$"
-	)
+	local number, unit = string.match(text, "^(%d+)([mhdw])$")
 
 	number = tonumber(number)
 
@@ -123,9 +93,7 @@ local function makeWarnCaseId()
 	local HttpService = game:GetService("HttpService")
 
 	local guid = HttpService:GenerateGUID(false)
-	local short = string.upper(
-		string.sub(guid, 1, 8)
-	)
+	local short = string.upper(string.sub(guid, 1, 8))
 
 	return "USARF-WARN-" .. short
 end
@@ -136,17 +104,11 @@ local function initializePlayerAttributes(player)
 	end
 
 	if player:GetAttribute("USARF_ModMode") == nil then
-		player:SetAttribute(
-			"USARF_ModMode",
-			false
-		)
+		player:SetAttribute("USARF_ModMode", false)
 	end
 
 	if player:GetAttribute("USARF_RadioModMode") == nil then
-		player:SetAttribute(
-			"USARF_RadioModMode",
-			false
-		)
+		player:SetAttribute("USARF_RadioModMode", false)
 	end
 end
 
@@ -165,151 +127,92 @@ local function resolveAreaKey(targetName)
 
 	local lowered = string.lower(targetName)
 
-	if lowered == "civil"
-		or lowered == "civil departments"
-	then
+	if lowered == "civil" or lowered == "civil departments" then
 		return "civil"
-	elseif lowered == "combative"
-		or lowered == "combative departments"
-	then
+	elseif lowered == "combative" or lowered == "combative departments" then
 		return "combative"
-	elseif lowered == "intelligence"
-		or lowered == "intelligence departments"
-	then
+	elseif lowered == "intelligence" or lowered == "intelligence departments" then
 		return "intelligence"
-	elseif lowered == "protection"
-		or lowered == "protection departments"
-	then
+	elseif lowered == "protection" or lowered == "protection departments" then
 		return "protection"
-	elseif lowered == "facility"
-		or lowered == "facility wide"
-		or lowered == "entire facility"
-	then
+	elseif lowered == "facility" or lowered == "facility wide" or lowered == "entire facility" then
 		return "facility"
 	end
 
 	return nil
 end
 
-function ModerationUtilityService.SetModMode(
-	player,
-	enabled
-)
+function ModerationUtilityService.SetModMode(player, enabled)
 	if not player then
 		return false, "Missing player."
 	end
 
 	local state = enabled == true
 
-	player:SetAttribute(
-		"USARF_ModMode",
-		state
-	)
+	player:SetAttribute("USARF_ModMode", state)
 
-	player:SetAttribute(
-		"USARF_RadioModMode",
-		state
-	)
+	player:SetAttribute("USARF_RadioModMode", state)
 
 	return true, state
 end
 
-function ModerationUtilityService.ToggleModMode(
-	player
-)
+function ModerationUtilityService.ToggleModMode(player)
 	if not player then
 		return false, "Missing player."
 	end
 
-	local newState =
-		player:GetAttribute("USARF_ModMode")
-		~= true
+	local newState = player:GetAttribute("USARF_ModMode") ~= true
 
-	return ModerationUtilityService.SetModMode(
-		player,
-		newState
-	)
+	return ModerationUtilityService.SetModMode(player, newState)
 end
 
-function ModerationUtilityService.View(
-	executor,
-	target
-)
+function ModerationUtilityService.View(executor, target)
 	if not executor or not target then
 		return false, "Missing player."
 	end
 
-	UtilityRemote:FireClient(
-		executor,
-		"View",
-		{
-			targetUserId = target.UserId,
-			targetName = target.Name,
-		}
-	)
+	UtilityRemote:FireClient(executor, "View", {
+		targetUserId = target.UserId,
+		targetName = target.Name,
+	})
 
 	return true
 end
 
-function ModerationUtilityService.Unview(
-	executor
-)
+function ModerationUtilityService.Unview(executor)
 	if not executor then
 		return false, "Missing player."
 	end
 
-	UtilityRemote:FireClient(
-		executor,
-		"Unview",
-		{}
-	)
+	UtilityRemote:FireClient(executor, "Unview", {})
 
 	return true
 end
 
-function ModerationUtilityService.Track(
-	executor,
-	target
-)
+function ModerationUtilityService.Track(executor, target)
 	if not executor or not target then
 		return false, "Missing player."
 	end
 
-	UtilityRemote:FireClient(
-		executor,
-		"Track",
-		{
-			targetUserId = target.UserId,
-			targetName = target.Name,
-		}
-	)
+	UtilityRemote:FireClient(executor, "Track", {
+		targetUserId = target.UserId,
+		targetName = target.Name,
+	})
 
 	return true
 end
 
-function ModerationUtilityService.Untrack(
-	executor
-)
+function ModerationUtilityService.Untrack(executor)
 	if not executor then
 		return false, "Missing player."
 	end
 
-	UtilityRemote:FireClient(
-		executor,
-		"Untrack",
-		{}
-	)
+	UtilityRemote:FireClient(executor, "Untrack", {})
 
 	return true
 end
 
-function ModerationUtilityService.WarnPlayer(
-	executor,
-	target,
-	reason,
-	caseId,
-	options
-)
+function ModerationUtilityService.WarnPlayer(executor, target, reason, caseId, options)
 	if not target then
 		return false, "Missing target."
 	end
@@ -328,56 +231,39 @@ function ModerationUtilityService.WarnPlayer(
 		caseId = makeWarnCaseId()
 	end
 
-	local issuerName = executor
-		and executor.Name
-		or clean(options.issuer)
+	local issuerName = executor and executor.Name or clean(options.issuer)
 
 	if issuerName == "" then
 		issuerName = "SYSTEM"
 	end
 
-	UtilityRemote:FireClient(
-		target,
-		"WarnPopup",
-		{
-			title = options.title
-				or "GAME WARNING",
+	UtilityRemote:FireClient(target, "WarnPopup", {
+		title = options.title or "GAME WARNING",
 
-			time = os.time(),
-			reason = reason,
-			caseId = caseId,
-			issuer = issuerName,
-		}
-	)
+		time = os.time(),
+		reason = reason,
+		caseId = caseId,
+		issuer = issuerName,
+	})
 
-	if options.skipBridge ~= true
-		and DiscordBotBridge
-	then
-		local bridgeSuccess, bridgeError =
-			DiscordBotBridge.SubmitModeration(
-				"warn",
-				target,
-				executor,
-				reason,
-				nil,
-				options.parentCaseNumber
-				or caseId,
-				{
-					evidence = options.evidence,
-					internalNotes =
-					options.internalNotes,
+	if options.skipBridge ~= true and DiscordBotBridge then
+		local bridgeSuccess, bridgeError = DiscordBotBridge.SubmitModeration(
+			"warn",
+			target,
+			executor,
+			reason,
+			nil,
+			options.parentCaseNumber or caseId,
+			{
+				evidence = options.evidence,
+				internalNotes = options.internalNotes,
 
-					-- The warning was already shown
-					-- directly by this service.
-					notifyPlayer = false,
-				}
-			)
+				notifyPlayer = false,
+			}
+		)
 
 		if not bridgeSuccess then
-			warn(
-				"[ModerationUtilityService] Failed to queue warning bridge:",
-				bridgeError
-			)
+			warn("[ModerationUtilityService] Failed to queue warning bridge:", bridgeError)
 		end
 	end
 
@@ -419,9 +305,7 @@ function ModerationUtilityService.SuspendTarget(
 		reason = "No reason provided."
 	end
 
-	local durationSeconds = parseDuration(
-		durationText
-	)
+	local durationSeconds = parseDuration(durationText)
 
 	if durationSeconds == nil then
 		return false, "Invalid duration."
@@ -439,88 +323,52 @@ function ModerationUtilityService.SuspendTarget(
 
 			if suspensionType == "Facility" then
 				success, result =
-					SuspensionService.SuspendFacility(
+					SuspensionService.SuspendFacility(targetPlayer.UserId, executor.UserId, reason, durationSeconds)
+			elseif suspensionType == "Area" or suspensionType == "Category" then
+				local areaKey = resolveAreaKey(targetName)
+
+				if areaKey == "facility" then
+					success, result =
+						SuspensionService.SuspendFacility(targetPlayer.UserId, executor.UserId, reason, durationSeconds)
+				elseif areaKey then
+					success, result = SuspensionService.SuspendArea(
 						targetPlayer.UserId,
+						areaKey,
 						executor.UserId,
 						reason,
 						durationSeconds
 					)
-
-			elseif suspensionType == "Area"
-				or suspensionType == "Category"
-			then
-				local areaKey = resolveAreaKey(
-					targetName
-				)
-
-				if areaKey == "facility" then
-					success, result =
-						SuspensionService.SuspendFacility(
-							targetPlayer.UserId,
-							executor.UserId,
-							reason,
-							durationSeconds
-						)
-
-				elseif areaKey then
-					success, result =
-						SuspensionService.SuspendArea(
-							targetPlayer.UserId,
-							areaKey,
-							executor.UserId,
-							reason,
-							durationSeconds
-						)
-
 				else
 					success = false
-					result =
-						"Unknown area target: "
-						.. targetName
+					result = "Unknown area target: " .. targetName
 				end
-
-			elseif suspensionType == "Team"
-				or suspensionType == "Department"
-			then
-				local teamKey =
-					TeamAccessService.ResolveTeamKey(
-						targetName
-					)
+			elseif suspensionType == "Team" or suspensionType == "Department" then
+				local teamKey = TeamAccessService.ResolveTeamKey(targetName)
 
 				if teamKey then
-					success, result =
-						SuspensionService.SuspendDepartment(
-							targetPlayer.UserId,
-							teamKey,
-							executor.UserId,
-							reason,
-							durationSeconds
-						)
-
+					success, result = SuspensionService.SuspendDepartment(
+						targetPlayer.UserId,
+						teamKey,
+						executor.UserId,
+						reason,
+						durationSeconds
+					)
 				else
 					success = false
-					result =
-						"Could not resolve team: "
-						.. targetName
+					result = "Could not resolve team: " .. targetName
 				end
-
 			else
 				success = false
-				result =
-					"Invalid suspension type."
+				result = "Invalid suspension type."
 			end
 
 			if success and result then
 				table.insert(created, result)
 
-				if options.skipBridge ~= true
-					and DiscordBotBridge
-				then
+				if options.skipBridge ~= true and DiscordBotBridge then
 					local scopeType = "team"
 
-					if suspensionType == "Area"
-						or suspensionType == "Category"
-					then
+					if suspensionType == "Area" or suspensionType == "Category" then
 						scopeType = "category"
 					elseif suspensionType == "Facility" then
 						scopeType = "facility"
@@ -528,79 +376,52 @@ function ModerationUtilityService.SuspendTarget(
 						scopeType = "department"
 					end
 
-					local bridgeSuccess, bridgeError =
-						DiscordBotBridge.SubmitSuspension(
-							targetPlayer,
-							executor,
-							targetName,
-							reason,
-							durationText,
-							options.parentCaseNumber,
-							{
-								suspensionType =
-								scopeType,
+					local bridgeSuccess, bridgeError = DiscordBotBridge.SubmitSuspension(
+						targetPlayer,
+						executor,
+						targetName,
+						reason,
+						durationText,
+						options.parentCaseNumber,
+						{
+							suspensionType = scopeType,
 
-								scopeType =
-								scopeType,
+							scopeType = scopeType,
 
-								scopeValue =
-								targetName,
+							scopeValue = targetName,
 
-								scopeDisplay =
-								targetName,
+							scopeDisplay = targetName,
 
-								evidence =
-								options.evidence,
+							evidence = options.evidence,
 
-								internalNotes =
-								options.internalNotes,
+							internalNotes = options.internalNotes,
 
-								notifyPlayer =
-								options.notifyPlayer
-								~= false,
-							}
-						)
+							notifyPlayer = options.notifyPlayer ~= false,
+						}
+					)
 
 					if not bridgeSuccess then
-						warn(
-							"[ModerationUtilityService] Failed to queue suspension bridge:",
-							targetName,
-							bridgeError
-						)
+						warn("[ModerationUtilityService] Failed to queue suspension bridge:", targetName, bridgeError)
 					end
 				end
 			else
-				table.insert(
-					failures,
-					{
-						target = targetName,
-						error = tostring(result),
-					}
-				)
+				table.insert(failures, {
+					target = targetName,
+					error = tostring(result),
+				})
 
-				warn(
-					"[ModerationUtilityService] Suspension failed:",
-					targetName,
-					result
-				)
+				warn("[ModerationUtilityService] Suspension failed:", targetName, result)
 			end
 		end
 	end
 
-	TeamAccessService.EnforcePlayerSuspensions(
-		targetPlayer
-	)
+	TeamAccessService.EnforcePlayerSuspensions(targetPlayer)
 
 	if #created <= 0 then
-		local message =
-			"No suspensions were created."
+		local message = "No suspensions were created."
 
 		if #failures > 0 then
-			message =
-				tostring(
-					failures[1].error
-					or message
-				)
+			message = tostring(failures[1].error or message)
 		end
 
 		return false, message
@@ -609,10 +430,7 @@ function ModerationUtilityService.SuspendTarget(
 	return true, created, failures
 end
 
-function ModerationUtilityService.ClearSuspensions(
-	executor,
-	targetPlayer
-)
+function ModerationUtilityService.ClearSuspensions(executor, targetPlayer)
 	if not executor then
 		return false, "Missing executor."
 	end
@@ -621,50 +439,33 @@ function ModerationUtilityService.ClearSuspensions(
 		return false, "Target player is not online."
 	end
 
-	local activeBefore =
-		SuspensionService.GetActiveSuspensions(
-			targetPlayer.UserId
-		)
+	local activeBefore = SuspensionService.GetActiveSuspensions(targetPlayer.UserId)
 
 	local count = #activeBefore
 
-	local success, result =
-		SuspensionService.ClearAllSuspensions(
-			targetPlayer.UserId,
-			executor.UserId
-		)
+	local success, result = SuspensionService.ClearAllSuspensions(targetPlayer.UserId, executor.UserId)
 
 	if not success then
 		return false, tostring(result)
 	end
 
-	TeamAccessService.EnforcePlayerSuspensions(
-		targetPlayer
-	)
+	TeamAccessService.EnforcePlayerSuspensions(targetPlayer)
 
 	return true, count
 end
 
-function ModerationUtilityService.GetSuspensions(
-	targetPlayer
-)
+function ModerationUtilityService.GetSuspensions(targetPlayer)
 	if not targetPlayer then
 		return {}
 	end
 
-	return SuspensionService.GetActiveSuspensions(
-		targetPlayer.UserId
-	)
+	return SuspensionService.GetActiveSuspensions(targetPlayer.UserId)
 end
 
-function ModerationUtilityService.GetSuspensionHistory(
-	targetPlayerOrUserId
-)
+function ModerationUtilityService.GetSuspensionHistory(targetPlayerOrUserId)
 	local userId = nil
 
-	if typeof(targetPlayerOrUserId) == "Instance"
-		and targetPlayerOrUserId:IsA("Player")
-	then
+	if typeof(targetPlayerOrUserId) == "Instance" and targetPlayerOrUserId:IsA("Player") then
 		userId = targetPlayerOrUserId.UserId
 	else
 		userId = tonumber(targetPlayerOrUserId)
@@ -677,12 +478,7 @@ function ModerationUtilityService.GetSuspensionHistory(
 	return SuspensionService.GetHistory(userId)
 end
 
-function ModerationUtilityService.Notify(
-	player,
-	title,
-	message,
-	notificationType
-)
+function ModerationUtilityService.Notify(player, title, message, notificationType)
 	if not player then
 		return false, "Missing player."
 	end
@@ -690,28 +486,16 @@ function ModerationUtilityService.Notify(
 	title = clean(title)
 	message = clean(message)
 
-	if NotificationService
-		and typeof(NotificationService.Notify)
-		== "function"
-	then
-		NotificationService.Notify(
-			player,
-			{
-				Title = title ~= ""
-					and title
-					or "Moderation",
+	if NotificationService and typeof(NotificationService.Notify) == "function" then
+		NotificationService.Notify(player, {
+			Title = title ~= "" and title or "Moderation",
 
-				Message = message,
+			Message = message,
 
-				Type = clean(
-					notificationType
-				) ~= ""
-					and notificationType
-					or "Info",
+			Type = clean(notificationType) ~= "" and notificationType or "Info",
 
-				Duration = 6,
-			}
-		)
+			Duration = 6,
+		})
 
 		return true
 	end
@@ -726,30 +510,13 @@ function ModerationUtilityService.Start()
 
 	Started = true
 
-	Players.PlayerAdded:Connect(
-		initializePlayerAttributes
-	)
+	Players.PlayerAdded:Connect(initializePlayerAttributes)
 
-	for _, player in ipairs(
-		Players:GetPlayers()
-		) do
+	for _, player in ipairs(Players:GetPlayers()) do
 		initializePlayerAttributes(player)
 	end
 
-	-- IMPORTANT:
-	-- ModerationCaseService is now the only service
-	-- allowed to assign the following remotes:
-	--
-	-- Moderation/OpenCase
-	-- Moderation/SubmitGameWarn
-	-- Moderation/SubmitTeamSuspension
-	-- Moderation/SubmitGameBan
-	--
-	-- Do not recreate or connect those remotes here.
-
-	print(
-		"[ModerationUtilityService] Started"
-	)
+	print("[ModerationUtilityService] Started")
 end
 
 return ModerationUtilityService

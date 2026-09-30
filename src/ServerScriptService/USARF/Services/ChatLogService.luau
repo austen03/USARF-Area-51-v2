@@ -63,7 +63,6 @@ function ChatLogService.GetRecent(count)
 	local logs = memoryLogs
 
 	if success and type(result) == "table" then
-		-- Entries still waiting to be saved are newer than anything in the store.
 		logs = writer:GetPending(getGlobalKey())
 
 		for _, entry in ipairs(result) do

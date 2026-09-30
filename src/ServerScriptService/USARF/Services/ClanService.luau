@@ -1,14 +1,3 @@
--- USARF Clans: player-created clans with ranks, join requests, an audit log and name tag tags.
---
--- DataStore "USARF_Clans_v1" keys:
---   clan_<id>   full clan record (members, requests, log)
---   user_<id>   { ClanId = id } - which clan a player is in (source of truth for membership)
---   name_<norm> / tag_<TAG>  -> clan id, reserving unique names and tags
---   index       list of clan summaries for the Browse list
--- Every change goes through UpdateAsync and re-checks permissions against the fresh record,
--- so two servers acting at once can't corrupt a clan. Servers tell each other about changes
--- over MessagingService so name tags and open menus update everywhere.
-
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local MessagingService = game:GetService("MessagingService")
@@ -48,12 +37,10 @@ local ATTR = {
 local store = DataStoreService:GetDataStore(STORE_NAME)
 
 local started = false
-local clanCache = {} -- [clanId] = { Data = record?, FetchedAt = clock }
+local clanCache = {}
 local indexCache = { Data = nil, FetchedAt = -math.huge }
-local passOwners = {} -- [userId] = true once they own the create gamepass
-local lastActionAt = {} -- [player] = clock
-
---// DataStore helpers
+local passOwners = {}
+local lastActionAt = {}
 
 local function withRetry(callback)
 	local lastError
@@ -98,8 +85,6 @@ end
 local function userKey(userId)
 	return "user_" .. tostring(userId)
 end
-
---// Text rules
 
 local function trim(text)
 	return (tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", ""))
@@ -185,7 +170,6 @@ local function validateDescription(description)
 	return description
 end
 
--- Runs player-created text through Roblox's filter (required for text other players see).
 local function filterText(text, userId)
 	if text == "" then
 		return text
@@ -203,7 +187,6 @@ local function filterText(text, userId)
 	return result
 end
 
--- Names and tags must pass the filter unchanged; descriptions are stored filtered.
 local function filterExact(text, userId, label)
 	local filtered, filterError = filterText(text, userId)
 
@@ -217,8 +200,6 @@ local function filterExact(text, userId, label)
 
 	return text
 end
-
---// Clan record helpers
 
 local function now()
 	return os.time()
@@ -305,8 +286,6 @@ local function sortedRequests(clan)
 	return list
 end
 
---// Caches
-
 local function cacheClan(clanId, clan)
 	clanCache[clanId] = { Data = clan, FetchedAt = os.clock() }
 end
@@ -367,8 +346,6 @@ local function writeIndexEntry(clanId, summary)
 	indexCache.FetchedAt = -math.huge
 end
 
---// Player membership
-
 local NameTagService = nil
 
 local function refreshNameTag(player)
@@ -404,7 +381,6 @@ local function applyPlayerAttributes(player, clan)
 	refreshNameTag(player)
 end
 
--- Clears user_<id> only if it still points at clanId.
 local function clearPointer(userId, clanId)
 	updateAsync(userKey(userId), function(pointer)
 		if type(pointer) == "table" and pointer.ClanId == clanId then
@@ -415,7 +391,6 @@ local function clearPointer(userId, clanId)
 	end)
 end
 
--- Loads which clan the player is in, repairing a pointer to a clan they're no longer in.
 local function refreshPlayer(player)
 	local success, pointer = getAsync(userKey(player.UserId))
 
@@ -430,7 +405,6 @@ local function refreshPlayer(player)
 		local loaded, record = getAsync(clanKey(clanId))
 
 		if not loaded then
-			-- Storage is unavailable; keep whatever we already know rather than dropping them.
 			return
 		end
 
@@ -452,13 +426,10 @@ local function getPlayerClanId(player)
 	return player:GetAttribute(ATTR.Id)
 end
 
---// Change propagation
-
 local function notifyClients()
 	ClanUpdated:FireAllClients()
 end
 
--- Re-sync local players in the clan (or listed) after a change, here or in another server.
 local function onClanChanged(clanId, userIds)
 	userIds = userIds or {}
 
@@ -486,8 +457,6 @@ local function broadcastChange(clanId, userIds)
 	end)
 end
 
---// Gamepass
-
 local function ownsCreatePass(player)
 	local gamepassId = ClanConfig.CreateGamepassId
 
@@ -511,8 +480,6 @@ local function ownsCreatePass(player)
 	return false
 end
 
---// Actions (each returns a result table for the client)
-
 local function fail(message, extra)
 	local result = { Success = false, Message = message }
 
@@ -527,7 +494,6 @@ local function ok(message)
 	return { Success = true, Message = message }
 end
 
--- Runs transform on the fresh clan record; transform returns (newRecord) or (nil, errorMessage).
 local function mutateClan(clanId, transform)
 	if typeof(clanId) ~= "string" or clanId == "" then
 		return nil, "That clan no longer exists."
@@ -602,7 +568,8 @@ function Actions.ListClans(_, payload)
 	local results = {}
 
 	for _, summary in ipairs(loadIndex()) do
-		if search == ""
+		if
+			search == ""
 			or string.find(string.lower(summary.Name or ""), search, 1, true)
 			or string.find(string.lower(summary.Tag or ""), search, 1, true)
 		then
@@ -707,7 +674,6 @@ function Actions.Create(player, payload)
 
 	local clanId = string.sub((HttpService:GenerateGUID(false):gsub("-", "")), 1, 16)
 
-	-- Reserve the name and tag so no other clan can take them.
 	local function reserve(key)
 		local taken = false
 
@@ -742,7 +708,6 @@ function Actions.Create(player, payload)
 		return fail("That tag is already taken.")
 	end
 
-	-- Claim the player's membership pointer.
 	local alreadyInClan = false
 	local claimed = updateAsync(userKey(player.UserId), function(pointer)
 		if type(pointer) == "table" and pointer.ClanId then
@@ -880,7 +845,6 @@ function Actions.AcceptRequest(player, payload)
 		return fail("Pick a request.")
 	end
 
-	-- Claim the requester's membership pointer first, so they can't end up in two clans.
 	local inOtherClan = false
 	local claimed = updateAsync(userKey(targetId), function(pointer)
 		if type(pointer) == "table" and pointer.ClanId and pointer.ClanId ~= clanId then
@@ -1182,7 +1146,6 @@ function Actions.EditAppearance(player, payload)
 	return ok("Clan updated.")
 end
 
--- Deletes a clan and everything that points at it. Used by Disband and staff deletes.
 local function deleteClan(clan)
 	local memberIds = {}
 
@@ -1226,8 +1189,6 @@ function Actions.Disband(player)
 	return ok(`[{clan.Tag}] {clan.Name} was disbanded.`)
 end
 
---// Staff moderation (used by the clan Cmdr commands)
-
 local function findClanByTag(tag)
 	tag = string.upper(trim(tag))
 
@@ -1240,7 +1201,6 @@ local function findClanByTag(tag)
 	return loadClan(clanId, true)
 end
 
--- Clan summaries (Id, Name, Tag, LogoId, ColorId, ...) matching a name/tag search.
 function ClanService.ListClans(search)
 	return Actions.ListClans(nil, { Search = search }).Clans
 end
@@ -1360,8 +1320,6 @@ function ClanService.StaffRetag(tag, newTag, staffName)
 	return true, `Changed [{oldTag}] to [{validTag}] (by {staffName}).`
 end
 
--- Removes a player from whatever clan they're in. A Leader removed this way hands the clan
--- to its highest-ranked remaining member, or the clan is deleted if it would be empty.
 function ClanService.StaffRemoveMember(userId, staffName)
 	local success, pointer = getAsync(userKey(userId))
 	local clanId = success and type(pointer) == "table" and pointer.ClanId or nil
@@ -1418,10 +1376,10 @@ function ClanService.StaffInfo(tag)
 	local leader = getMember(clan, clan.LeaderUserId)
 
 	return true,
-		`[{clan.Tag}] {clan.Name} | Id {clan.Id} | Leader {leader and leader.Name or "?"} ({clan.LeaderUserId}) | {countEntries(clan.Members)}/{ClanConfig.MaxMembers} members | {countEntries(clan.Requests)} pending`
+		`[{clan.Tag}] {clan.Name} | Id {clan.Id} | Leader {leader and leader.Name or "?"} ({clan.LeaderUserId}) | {countEntries(
+			clan.Members
+		)}/{ClanConfig.MaxMembers} members | {countEntries(clan.Requests)} pending`
 end
-
---// Remote handling
 
 local function handleRequest(player, action, payload)
 	local handler = Actions[action]

@@ -42,8 +42,6 @@ local function listContains(list, value)
 	return false
 end
 
--- A covert player is a Test Subject for doors unless they have switched their
--- clearance back on; then doors treat them as their home team.
 local function getCovertHomeTeamKey(player)
 	if CovertState.HasClearance(player) then
 		return CovertState.GetHomeTeamKey(player)
@@ -208,9 +206,7 @@ function AccessService.IsStaffBypass(player)
 		devRank = player:GetRankInGroup(DEV_GROUP_ID)
 	end)
 
-	return modRank == 2
-		or modRank >= 6
-		or devRank >= 4
+	return modRank == 2 or modRank >= 6 or devRank >= 4
 end
 
 function AccessService.GetClearanceLevel(player)
@@ -301,7 +297,8 @@ function AccessService.IsTeamDenied(teamName, doorSettings, player)
 		return true
 	end
 
-	if HARD_BLOCKED_TEAMS[teamName]
+	if
+		HARD_BLOCKED_TEAMS[teamName]
 		and not AccessService.IsDoorTagAllowed(player, doorSettings)
 		and not isRiotAuthorized(player)
 		and not getTemporaryClearance(player)
@@ -362,7 +359,8 @@ function AccessService.CanOpenDoor(player, doorSettings)
 		return false, "PMC access denied."
 	end
 
-	if (doorSettings.AllowStaffBypass ~= false and doorSettings.allowStaffBypass ~= false)
+	if
+		(doorSettings.AllowStaffBypass ~= false and doorSettings.allowStaffBypass ~= false)
 		and AccessService.IsStaffBypass(player)
 	then
 		return true, "Staff bypass"
@@ -405,7 +403,8 @@ function AccessService.CanLockDoor(player, doorSettings)
 		return false, "This team cannot lock doors."
 	end
 
-	if (doorSettings.AllowStaffBypass ~= false and doorSettings.allowStaffBypass ~= false)
+	if
+		(doorSettings.AllowStaffBypass ~= false and doorSettings.allowStaffBypass ~= false)
 		and AccessService.IsStaffBypass(player)
 	then
 		return true, "Staff bypass"
