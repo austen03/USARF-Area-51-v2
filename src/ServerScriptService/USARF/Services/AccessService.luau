@@ -10,6 +10,7 @@ local CovertState = require(Services:WaitForChild("CovertState"))
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local USARFConfig = require(USARF.Config:WaitForChild("USARFConfig"))
+local MainGroupRanks = require(USARF.Config:WaitForChild("MainGroupRanks"))
 
 local RiotService = nil
 pcall(function()
@@ -181,7 +182,7 @@ function AccessService.GetMainRank(player)
 		rank = player:GetRankInGroup(MAIN_GROUP_ID)
 	end)
 
-	return rank
+	return MainGroupRanks.EffectiveRank(MAIN_GROUP_ID, rank)
 end
 
 function AccessService.IsStaffBypass(player)

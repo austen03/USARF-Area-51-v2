@@ -375,7 +375,7 @@ USARFConfig.Teams = {
 		requirements = {
 			type = "group",
 			groupId = USARFConfig.Groups.Main,
-			minRank = 19,
+			minRank = 21, -- Federal Administrator and above
 		},
 	},
 
@@ -480,7 +480,10 @@ USARFConfig.Clearance = {
 	},
 
 	RankMap = {
-		{ minRank = 19, clearance = 10 },
+		-- QA (19) is read as a plain member (MainGroupRanks.EffectiveRank), so it never
+		-- reaches the ranks below.
+		{ minRank = 21, clearance = 10 },
+		{ exactRank = 20, clearance = 9 },
 		{ exactRank = 18, clearance = 9 },
 		{ minRank = 16, clearance = 10 },
 		{ minRank = 13, clearance = 9 },
@@ -895,10 +898,12 @@ USARFConfig.Admin = {
 		MainGroup = {
 			GroupId = USARFConfig.Groups.Main,
 
+			-- Keep in step with CmdrAdminConfig.MainServerRanks. 19 (QA) has no level.
 			ExactRanks = {
-				[255] = "Owner",
-				[20] = "Administrator",
-				[19] = "Administrator",
+				[255] = "Owner", -- Federal Overseer
+				[22] = "Administrator", -- Federal Manager
+				[21] = "Administrator", -- Federal Administrator
+				[20] = "Developer", -- A51 v2 Developer
 				[18] = "Developer",
 				[17] = "VPOTUS_POTUS",
 				[16] = "VPOTUS_POTUS",

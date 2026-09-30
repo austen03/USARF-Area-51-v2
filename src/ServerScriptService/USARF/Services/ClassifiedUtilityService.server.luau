@@ -10,6 +10,7 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local Config = require(ConfigFolder:WaitForChild("ClassifiedUtilityConfig"))
+local MainGroupRanks = require(ConfigFolder:WaitForChild("MainGroupRanks"))
 local AuditService = require(Services:WaitForChild("AuditService"))
 local NotificationService = require(Services:WaitForChild("NotificationService"))
 
@@ -79,7 +80,9 @@ local function hasUtilityAccess(player)
 		return false
 	end
 
-	if player:GetRankInGroup(Config.MainGroupId) >= Config.MainGroupMinimumRank then
+	local mainRank = MainGroupRanks.EffectiveRank(Config.MainGroupId, player:GetRankInGroup(Config.MainGroupId))
+
+	if mainRank >= Config.MainGroupMinimumRank then
 		return true
 	end
 

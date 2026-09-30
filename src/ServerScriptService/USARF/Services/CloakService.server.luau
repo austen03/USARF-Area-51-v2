@@ -11,6 +11,7 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local Config = require(ConfigFolder:WaitForChild("CloakConfig"))
+local MainGroupRanks = require(ConfigFolder:WaitForChild("MainGroupRanks"))
 local AuditService = require(Services:WaitForChild("AuditService"))
 
 local remote = RemotesFolder:FindFirstChild(Config.RemoteName)
@@ -51,7 +52,9 @@ local function hasCloakAccess(player)
 		return false
 	end
 
-	if player:GetRankInGroup(Config.MainGroupId) >= Config.MainGroupMinimumRank then
+	local mainRank = MainGroupRanks.EffectiveRank(Config.MainGroupId, player:GetRankInGroup(Config.MainGroupId))
+
+	if mainRank >= Config.MainGroupMinimumRank then
 		return true, "Main group override."
 	end
 

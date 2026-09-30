@@ -21,7 +21,9 @@ local BOARD_POSITION = UDim2.new(1, -16, 0, 76)
 local PANEL_WIDTH = 460
 local PANEL_HEIGHT = 500
 
-local MAIN_GROUP_ID = 6033326
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
+local MAIN_GROUP_ID = MainGroupRanks.GroupId
 local MOD_GROUP_ID = 8647541
 
 local visible = true
@@ -182,7 +184,7 @@ local function isModerator()
 		modRank = localPlayer:GetRankInGroup(MOD_GROUP_ID)
 	end)
 
-	return mainRank >= 18 or modRank >= 2
+	return MainGroupRanks.EffectiveRank(MAIN_GROUP_ID, mainRank) >= MainGroupRanks.Developer or modRank >= 2
 end
 
 local function isMenuOpen()

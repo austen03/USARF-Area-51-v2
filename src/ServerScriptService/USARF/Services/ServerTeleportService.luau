@@ -12,6 +12,8 @@ local MainMenuConfig = require(
 	Config:WaitForChild("ServerConfig")
 )
 
+local MainGroupRanks = require(Config:WaitForChild("MainGroupRanks"))
+
 local Services = ServerScriptService
 	:WaitForChild("USARF")
 	:WaitForChild("Services")
@@ -60,7 +62,7 @@ local function hasGroupRank(player, groupId, minRank)
 		rank = player:GetRankInGroup(groupId)
 	end)
 
-	return rank >= (tonumber(minRank) or 1)
+	return MainGroupRanks.EffectiveRank(groupId, rank) >= (tonumber(minRank) or 1)
 end
 
 local function canUseServer(player, server)
@@ -82,7 +84,7 @@ local function canUseServer(player, server)
 		and hasGroupRank(
 			player,
 			admin.MainGroupId,
-			admin.MinRank or 19
+			admin.MinRank or MainGroupRanks.FederalAdministrator
 		)
 	then
 		return true

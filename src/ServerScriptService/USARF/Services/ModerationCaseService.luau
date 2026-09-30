@@ -26,7 +26,9 @@ end)
 
 local ModerationCaseService = {}
 
-local MAIN_GROUP_ID = 6033326
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
+local MAIN_GROUP_ID = MainGroupRanks.GroupId
 local MOD_GROUP_ID = 8647541
 
 local REMOTE_FOLDER_NAME = "USARF_Remotes"
@@ -231,7 +233,7 @@ local function isModerator(player)
 		)
 	end)
 
-	return mainRank >= 18 or modRank >= 2
+	return MainGroupRanks.EffectiveRank(MAIN_GROUP_ID, mainRank) >= MainGroupRanks.Developer or modRank >= 2
 end
 
 local function getPlayerByUserId(userId)

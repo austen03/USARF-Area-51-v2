@@ -6,6 +6,7 @@ local USARF = ReplicatedStorage:WaitForChild("USARF")
 local Config = USARF:WaitForChild("Config")
 
 local USARFConfig = require(Config:WaitForChild("USARFConfig"))
+local MainGroupRanks = require(Config:WaitForChild("MainGroupRanks"))
 
 local CovertState =
 	require(ServerScriptService:WaitForChild("USARF"):WaitForChild("Services"):WaitForChild("CovertState"))
@@ -46,7 +47,9 @@ local function getPlayerRankInGroup(player, groupId)
 		return 0
 	end
 
-	userCache[groupId] = result or 0
+	-- Team access, clearance and radio channels all read ranks here, so QA counts as a
+	-- plain member for all of them.
+	userCache[groupId] = MainGroupRanks.EffectiveRank(groupId, result or 0)
 	return userCache[groupId]
 end
 
