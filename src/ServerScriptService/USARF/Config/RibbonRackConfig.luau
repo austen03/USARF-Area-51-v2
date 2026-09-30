@@ -34,6 +34,7 @@ RibbonRackConfig.GoogleSheet = {
 RibbonRackConfig.Ownership = {
 
 	AttributeName = "USARF_Medals",
+	FolderName = "Medals",
 }
 
 RibbonRackConfig.Rendering = {

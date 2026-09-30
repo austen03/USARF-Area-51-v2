@@ -378,14 +378,6 @@ function RibbonRackService.GetOwnedMedals(player)
 	mergeInto(owned, readAttributeMedals(player))
 	mergeInto(owned, readFolderMedals(player))
 
-	if Config.Testing.GrantAllInStudio and RunService:IsStudio() then
-		for _, definition in ipairs(Config.Medals) do
-			if definition.Enabled ~= false then
-				owned[definition.Key] = true
-			end
-		end
-	end
-
 	return owned
 end
 
