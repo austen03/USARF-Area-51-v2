@@ -1,14 +1,11 @@
 local ClanConfig = {}
 
--- Creating a clan requires this gamepass. Any player can join a clan.
 ClanConfig.CreateGamepassId = 1999749146
 
 ClanConfig.MaxMembers = 25
 
--- Pending join requests a clan can hold at once.
 ClanConfig.MaxPendingRequests = 25
 
--- Clan-visible audit log entries kept per clan.
 ClanConfig.MaxLogEntries = 50
 
 ClanConfig.Name = {
@@ -16,7 +13,6 @@ ClanConfig.Name = {
 	MaxLength = 20,
 }
 
--- Tags are 3-4 characters, letters and numbers only, stored in UPPERCASE.
 ClanConfig.Tag = {
 	MinLength = 3,
 	MaxLength = 4,
@@ -26,22 +22,17 @@ ClanConfig.Description = {
 	MaxLength = 120,
 }
 
--- Exact tags that can't be used.
 ClanConfig.BlacklistedTags = { "USARF", "USA", "MOD", "ADMIN", "STAFF", "RBLX", "RBX", "ROBLOX" }
 
--- Names and tags can't start with or contain any of these (case-insensitive).
 ClanConfig.BlacklistedNames = { "USARF", "USA", "MOD", "ADMIN", "STAFF", "RBLX", "RBX", "ROBLOX" }
 
--- Lowest to highest. Leader is only gained through Create or Transfer Leadership.
 ClanConfig.Ranks = { "Member", "Veteran", "Specialist", "Officer", "Co-Leader", "Leader" }
 
--- Minimum rank for each action. Ranking and kicking only apply to members ranked
--- below you, and you can only promote someone to a rank below your own.
 ClanConfig.Permissions = {
 	ManageRequests = "Officer",
 	RankMembers = "Officer",
 	KickMembers = "Co-Leader",
-	EditAppearance = "Leader", -- description, logo, logo color
+	EditAppearance = "Leader",
 	TransferLeadership = "Leader",
 	Disband = "Leader",
 }

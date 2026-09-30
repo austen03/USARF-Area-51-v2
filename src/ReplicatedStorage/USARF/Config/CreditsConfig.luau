@@ -20,11 +20,27 @@ CreditsConfig.Sections = {
 		Title = "DEVELOPMENT TEAM",
 		Members = {
 			{
-				Username = "",
-				UserId = 00000000,
-				Role = "",
+				Username = "stonktech",
+				UserId = 62114489,
+				Role = "Former Owner & Developer",
 				Contributions = {
-					"",
+					"Programming",
+				},
+			},
+			{
+				Username = "ianadanfan",
+				UserId = 189571480,
+				Role = "Former Developer",
+				Contributions = {
+					"Programming",
+				},
+			},
+			{
+				Username = "Generic_Kris",
+				UserId = 122257087,
+				Role = "Former Developer",
+				Contributions = {
+					"Builder",
 				},
 			},
 		},
@@ -33,6 +49,7 @@ CreditsConfig.Sections = {
 	{
 		Title = "SPECIAL THANKS TO",
 		Items = {
+			"Former Developers",
 			"Contributors",
 			"Builders",
 			"Modelers",
