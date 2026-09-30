@@ -20,7 +20,6 @@ ClassifiedUtilityConfig.AllowedTeams = {
 	},
 }
 
--- These teams can use the panel, but cannot be selected as targets.
 ClassifiedUtilityConfig.ProtectedTargetTeams = {
 	["Central Intelligence Agency"] = true,
 	["Federal Bureau of Investigation"] = true,
