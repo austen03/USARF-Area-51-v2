@@ -18,6 +18,10 @@ local FacilityAlertService = {}
 
 local MAX_ANNOUNCEMENTS = 50
 
+-- Unpinned alerts drop out of the announcements list this long after they were sent.
+-- AnnouncementController uses the same lifetime (it arrives with each payload).
+local ALERT_LIFETIME_SECONDS = 15 * 60
+
 local announcementHistory = {}
 
 local VALID_CATEGORIES = {
@@ -59,6 +63,7 @@ local DEFAULT_ANNOUNCEMENTS = {
 		date = "System Notice",
 		sender = "System",
 		createdAt = os.time(),
+		pinned = true,
 	},
 	{
 		id = "return_menu",
@@ -69,6 +74,7 @@ local DEFAULT_ANNOUNCEMENTS = {
 		date = "Deployment System",
 		sender = "System",
 		createdAt = os.time(),
+		pinned = true,
 	},
 }
 
@@ -82,7 +88,24 @@ local function cloneTable(tbl)
 	return copy
 end
 
+local function isExpired(announcement, now)
+	return announcement.pinned ~= true
+		and typeof(announcement.createdAt) == "number"
+		and now - announcement.createdAt >= ALERT_LIFETIME_SECONDS
+end
+
+local function pruneExpired()
+	local now = os.time()
+
+	for index = #announcementHistory, 1, -1 do
+		if isExpired(announcementHistory[index], now) then
+			table.remove(announcementHistory, index)
+		end
+	end
+end
+
 local function addAnnouncement(payload)
+	pruneExpired()
 	table.insert(announcementHistory, 1, payload)
 
 	while #announcementHistory > MAX_ANNOUNCEMENTS do
@@ -108,13 +131,38 @@ local function buildRadioAlertMessage(title, message)
 end
 
 function FacilityAlertService.GetAnnouncements()
+	pruneExpired()
+
 	local results = {}
 
 	for index, announcement in ipairs(announcementHistory) do
 		results[index] = cloneTable(announcement)
+		results[index].expiresIn = if announcement.pinned
+			then nil
+			else ALERT_LIFETIME_SECONDS - (os.time() - (announcement.createdAt or os.time()))
 	end
 
 	return results
+end
+
+-- Removes every unpinned alert for everyone, e.g. after a Code 1 is called off.
+function FacilityAlertService.ClearAlerts()
+	local removedIds = {}
+
+	for index = #announcementHistory, 1, -1 do
+		local announcement = announcementHistory[index]
+
+		if announcement.pinned ~= true then
+			table.insert(removedIds, announcement.id)
+			table.remove(announcementHistory, index)
+		end
+	end
+
+	if #removedIds > 0 then
+		FacilityAlertRemote:FireAllClients({ removeIds = removedIds })
+	end
+
+	return #removedIds
 end
 
 function FacilityAlertService.SetStatus(status, subtitle)
@@ -137,7 +185,8 @@ function FacilityAlertService.SetStatus(status, subtitle)
 	print("[FacilityAlertService] Facility status changed:", status, subtitle)
 end
 
-function FacilityAlertService.SendAlert(category, title, message, sender)
+-- options.Radio = false keeps a Facility/Emergency alert off the radio alerts channel.
+function FacilityAlertService.SendAlert(category, title, message, sender, options)
 	category = category or "Facility"
 	title = title or "Facility Alert"
 	message = message or "No message provided."
@@ -157,6 +206,7 @@ function FacilityAlertService.SendAlert(category, title, message, sender)
 		date = "Facility Alert",
 		sender = sender or "System",
 		createdAt = os.time(),
+		expiresIn = ALERT_LIFETIME_SECONDS,
 		read = false,
 	}
 
@@ -179,7 +229,7 @@ function FacilityAlertService.SendAlert(category, title, message, sender)
 		},
 	})
 
-	if RADIO_ALERT_CATEGORIES[category] then
+	if RADIO_ALERT_CATEGORIES[category] and not (options and options.Radio == false) then
 		RadioService.System("alerts", buildRadioAlertMessage(title, message))
 	end
 

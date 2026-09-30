@@ -34,6 +34,55 @@ local CATEGORY_COLORS = {
 local ANNOUNCEMENTS = {}
 local readAnnouncements = {}
 
+-- Pinned notices sit above everything and never expire. Other alerts carry expiresIn
+-- (seconds left, from FacilityAlertService), turned into a local os.clock() deadline so a
+-- wrong PC clock can't hide them early or keep them late.
+local EXPIRY_CHECK_SECONDS = 15
+
+local function withExpiry(announcement, expiresIn)
+	if announcement.pinned ~= true and tonumber(expiresIn) then
+		announcement.expiresAt = os.clock() + tonumber(expiresIn)
+	end
+
+	return announcement
+end
+
+local function sortAnnouncements()
+	-- Stable order: pinned first, then newest first; ties keep their existing order.
+	for index, announcement in ipairs(ANNOUNCEMENTS) do
+		announcement.sortIndex = index
+	end
+
+	table.sort(ANNOUNCEMENTS, function(a, b)
+		if (a.pinned == true) ~= (b.pinned == true) then
+			return a.pinned == true
+		end
+
+		if a.pinned ~= true and (a.createdAt or 0) ~= (b.createdAt or 0) then
+			return (a.createdAt or 0) > (b.createdAt or 0)
+		end
+
+		return a.sortIndex < b.sortIndex
+	end)
+end
+
+-- Returns true when something was removed.
+local function pruneExpired()
+	local now = os.clock()
+	local removed = false
+
+	for index = #ANNOUNCEMENTS, 1, -1 do
+		local expiresAt = ANNOUNCEMENTS[index].expiresAt
+
+		if expiresAt and now >= expiresAt then
+			table.remove(ANNOUNCEMENTS, index)
+			removed = true
+		end
+	end
+
+	return removed
+end
+
 local panelScale = AnnouncementPanel:FindFirstChild("UIScale")
 if not panelScale then
 	panelScale = Instance.new("UIScale")
@@ -163,7 +212,13 @@ local function loadAnnouncements()
 		return
 	end
 
-	ANNOUNCEMENTS = result or {}
+	ANNOUNCEMENTS = {}
+
+	for _, announcement in ipairs(result or {}) do
+		table.insert(ANNOUNCEMENTS, withExpiry(announcement, announcement.expiresIn))
+	end
+
+	sortAnnouncements()
 	updateBadge()
 end
 
@@ -218,12 +273,37 @@ function _G.USARFAddAnnouncement(payload)
 		date = payload.date or "Facility Alert",
 		sender = payload.sender or "System",
 		createdAt = payload.createdAt or os.time(),
+		pinned = payload.pinned == true,
 	}
 
-	table.insert(ANNOUNCEMENTS, 1, announcement)
+	table.insert(ANNOUNCEMENTS, 1, withExpiry(announcement, payload.expiresIn))
+	sortAnnouncements()
 
 	while #ANNOUNCEMENTS > 50 do
 		table.remove(ANNOUNCEMENTS)
+	end
+
+	updateBadge()
+
+	if AnnouncementPanel.Visible then
+		populateAnnouncements()
+	end
+end
+
+function _G.USARFRemoveAnnouncements(ids)
+	if type(ids) ~= "table" then
+		return
+	end
+
+	local remove = {}
+	for _, id in ipairs(ids) do
+		remove[id] = true
+	end
+
+	for index = #ANNOUNCEMENTS, 1, -1 do
+		if remove[ANNOUNCEMENTS[index].id] then
+			table.remove(ANNOUNCEMENTS, index)
+		end
 	end
 
 	updateBadge()
@@ -247,5 +327,19 @@ _G.USARFUpdateAnnouncementBadge = updateBadge
 applyPanelLayout()
 AnnouncementPanel.Visible = false
 loadAnnouncements()
+
+task.spawn(function()
+	while true do
+		task.wait(EXPIRY_CHECK_SECONDS)
+
+		if pruneExpired() then
+			updateBadge()
+
+			if AnnouncementPanel.Visible then
+				populateAnnouncements()
+			end
+		end
+	end
+end)
 
 print("USARF AnnouncementController initialized")

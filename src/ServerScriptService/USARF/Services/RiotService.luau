@@ -70,6 +70,7 @@ pcall(function()
 end)
 
 local RIOT_GOLD_COST = RiotConfig.PurchaseGoldCost or 2500
+local RIOT_WEAPON_ATTRIBUTE = "USARF_RiotWeapon"
 
 local state = {
 	Active = false,
@@ -145,6 +146,9 @@ local function giveTool(player, toolName)
 	end
 
 	local clone = template:Clone()
+	-- The riot weapons share names with Black Market tools; this tag keeps LoadoutService's
+	-- Black Market cleanup from deleting them and lets the riot remove only its own copies.
+	clone:SetAttribute(RIOT_WEAPON_ATTRIBUTE, true)
 	clone.Parent = player.Backpack
 end
 
@@ -170,20 +174,10 @@ local function removeRiotWeapons(player)
 		return
 	end
 
-	for _, toolName in ipairs(RiotConfig.RiotWeapons or {}) do
-		if player.Backpack then
-			local backpackTool = player.Backpack:FindFirstChild(toolName)
-
-			if backpackTool then
-				backpackTool:Destroy()
-			end
-		end
-
-		if player.Character then
-			local characterTool = player.Character:FindFirstChild(toolName)
-
-			if characterTool then
-				characterTool:Destroy()
+	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
+		for _, child in ipairs(container and container:GetChildren() or {}) do
+			if child:IsA("Tool") and child:GetAttribute(RIOT_WEAPON_ATTRIBUTE) == true then
+				child:Destroy()
 			end
 		end
 	end

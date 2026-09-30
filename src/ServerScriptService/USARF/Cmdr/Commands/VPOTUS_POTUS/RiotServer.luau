@@ -1,17 +1,18 @@
 local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
 local RiotService = require(Services:WaitForChild("RiotService"))
+local FacilityLockdownService = require(Services:WaitForChild("FacilityLockdownService"))
 
 local FacilityAnnouncementService = nil
 pcall(function()
 	FacilityAnnouncementService = require(Services:WaitForChild("FacilityAnnouncementService"))
 end)
 
-local FacilityState = ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Shared"):WaitForChild("FacilityState")
-local LockdownLevelValue = FacilityState:FindFirstChild("LockdownLevel")
+local RIOT_LOCKDOWN_LEVEL = 2
 
+-- Lockdown goes through FacilityLockdownService (not the LockdownLevel value directly) so
+-- doors follow it and the change is posted to the alerts channel.
 return function(context, enabled)
 	local active = RiotService.IsActive()
 
@@ -26,8 +27,8 @@ return function(context, enabled)
 			return tostring(result)
 		end
 
-		if LockdownLevelValue then
-			LockdownLevelValue.Value = math.max(LockdownLevelValue.Value, 2)
+		if FacilityLockdownService.GetLevel() < RIOT_LOCKDOWN_LEVEL then
+			FacilityLockdownService.SetLevel(RIOT_LOCKDOWN_LEVEL, context.Executor, "Test Subject riot")
 		end
 
 		return "Riot started."
@@ -39,9 +40,7 @@ return function(context, enabled)
 		FacilityAnnouncementService.StopAll()
 	end
 
-	if LockdownLevelValue then
-		LockdownLevelValue.Value = 0
-	end
+	FacilityLockdownService.Clear(context.Executor, "Riot ended")
 
 	if not ok then
 		return tostring(result)

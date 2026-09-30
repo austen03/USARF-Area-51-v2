@@ -5,6 +5,6 @@ return {
 	Group = "USARF Admin",
 
 	Args = {
-		{ Type = "string", Name = "Status", Description = "normal, secure, alert, lockdown, breach, riot, hostileforces, ufo, code1, maintenance, evacuation." },
+		{ Type = "facilityStatus", Name = "Status", Description = "Facility status to show." },
 	},
 }

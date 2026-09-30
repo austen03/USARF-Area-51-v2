@@ -502,6 +502,24 @@ CmdrAdminConfig.Commands = {
 		CaseId = false,
 	},
 
+	stopannouncements = {
+		MainServerLevel = "VPOTUS_POTUS",
+		DisplayGroup = "VPOTUS | POTUS",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
+	clearalerts = {
+		MainServerLevel = "VPOTUS_POTUS",
+		DisplayGroup = "VPOTUS | POTUS",
+		TrainingReserveLevel = nil,
+		ReserveOnlyTraining = false,
+		Log = true,
+		CaseId = false,
+	},
+
 	facilitystatus = {
 		MainServerLevel = "VPOTUS_POTUS",
 		DisplayGroup = "VPOTUS | POTUS",
