@@ -80,14 +80,22 @@ CmdrAdminConfig.MainServerRanks = {
 
 -- QA testers: a fixed list of commands, only in the listed games. Separate from the
 -- level ladder above, so it never grants anything beyond Commands and never applies in
--- the live game. A player matches by main-group rank or role name (in-game APIs can't
--- see role ids). Everywhere else QA counts as a plain member (see MainGroupRanks).
+-- the live game. A player matches by UserId, main-group rank or role name (in-game APIs
+-- can't see role ids). Everywhere else QA counts as a plain member (see MainGroupRanks).
+--
+-- The V2 QA Team role (rank 19) is private, and a private role is hidden from the game
+-- too (GetRankInGroup reports the member's public rank), so QA testers are listed by
+-- UserId. The rank match only takes effect if the role is made public.
 CmdrAdminConfig.QA = {
 	Enabled = true,
 
 	-- game.GameId (the universe), not the place id. 3953313565 = A51 [DEV TEST].
 	GameIds = {
 		[3953313565] = true,
+	},
+
+	UserIds = {
+		[42629977] = true, -- ncis1366
 	},
 
 	GroupId = 6033326,

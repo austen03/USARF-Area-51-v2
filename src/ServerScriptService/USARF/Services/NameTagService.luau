@@ -23,6 +23,7 @@ pcall(function()
 end)
 
 local MainGroupRanks = require(ReplicatedStorage.USARF.Config:WaitForChild("MainGroupRanks"))
+local CmdrAdminConfig = require(USARFServer:WaitForChild("Config"):WaitForChild("CmdrAdminConfig"))
 
 local NameTagService = {}
 
@@ -655,8 +656,12 @@ local function getBadgeMap(player)
 		badges.Developer = true
 	end
 
-	-- QA testers get the QA badge from their group rank (the sheet can grant it too).
-	if getRawRank(player, MAIN_GROUP_ID) == MainGroupRanks.QA then
+	-- QA testers get the QA badge from the QA user list or their group rank (the sheet
+	-- can grant it too). The rank only works if the private QA role is made public.
+	if
+		(CmdrAdminConfig.QA and CmdrAdminConfig.QA.UserIds and CmdrAdminConfig.QA.UserIds[player.UserId])
+		or getRawRank(player, MAIN_GROUP_ID) == MainGroupRanks.QA
+	then
 		badges.QA = true
 	end
 

@@ -185,6 +185,10 @@ function CmdrPermissionService.IsQA(player)
 		return false
 	end
 
+	if qaConfig.UserIds and qaConfig.UserIds[player.UserId] then
+		return true
+	end
+
 	if qaConfig.Ranks and qaConfig.Ranks[safeRank(player, qaConfig.GroupId)] then
 		return true
 	end
