@@ -1,4 +1,5 @@
 local StarterGui = game:GetService("StarterGui")
+local TextChatService = game:GetService("TextChatService")
 
 local function setCoreGui()
 	pcall(function()
@@ -10,11 +11,24 @@ local function setCoreGui()
 	end)
 end
 
+-- No chat window: players still press / to type, and messages show as bubbles over
+-- heads. The window's channel tabs go with it.
+local function setChatLayout()
+	pcall(function()
+		TextChatService.ChatWindowConfiguration.Enabled = false
+		TextChatService.ChannelTabsConfiguration.Enabled = false
+		TextChatService.ChatInputBarConfiguration.Enabled = true
+		TextChatService.BubbleChatConfiguration.Enabled = true
+	end)
+end
+
 setCoreGui()
+setChatLayout()
 
 task.spawn(function()
 	while true do
 		setCoreGui()
+		setChatLayout()
 		task.wait(2)
 	end
 end)
