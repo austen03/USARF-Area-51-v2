@@ -81,17 +81,14 @@ local function sendRadioAlert(level, reason)
 	end
 
 	local levelInfo = getLevelInfo(level)
-	local message = levelInfo.RadioMessage or levelInfo.Name
+	-- Lockdown levels 0-4 are DEFCON 5-1, so every change is a DEFCON change too.
+	local message = "DEFCON " .. tostring(5 - level) .. ": " .. (levelInfo.RadioMessage or levelInfo.Name)
 
 	if reason and reason ~= "" then
 		message = message .. " Reason: " .. reason
 	end
 
-	if typeof(RadioService.SendSystemMessage) == "function" then
-		RadioService.SendSystemMessage("ALERTS", message)
-	elseif typeof(RadioService.BroadcastSystem) == "function" then
-		RadioService.BroadcastSystem("ALERTS", message)
-	end
+	RadioService.Alert(message, if level > 0 then 5 else 3)
 end
 
 local function fireChanged()

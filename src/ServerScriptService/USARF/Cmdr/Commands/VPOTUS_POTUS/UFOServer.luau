@@ -10,12 +10,7 @@ return function(context, message)
 
 	FacilityAnnouncementService.PlayEvent("UFO")
 
-	FacilityAlertService.SendAlert(
-		"Facility",
-		"UFO Activity",
-		message,
-		context.Executor.Name
-	)
+	FacilityAlertService.SendAlert("Facility", "UFO Activity", message, context.Executor.Name, { Radio = false })
 
 	return "UFO announcement triggered."
 end

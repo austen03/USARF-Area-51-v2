@@ -17,11 +17,8 @@ return function(context, level)
 
 	local lockdownLevel = DEFCON_TO_LOCKDOWN[level] or 0
 
-	FacilityLockdownService.SetLevel(
-		lockdownLevel,
-		context.Executor,
-		"DEFCON " .. tostring(level) .. " triggered"
-	)
+	-- No reason: the alerts channel message already names the DEFCON level.
+	FacilityLockdownService.SetLevel(lockdownLevel, context.Executor)
 
 	return "DEFCON set to " .. tostring(level) .. "."
 end

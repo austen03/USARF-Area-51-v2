@@ -207,7 +207,8 @@ local function removeBlackMarketTools(player)
 		}) do
 		if container then
 			for _, child in ipairs(container:GetChildren()) do
-				if child:IsA("Tool") and shopToolNames[child.Name] then
+				-- Riot weapons share names with shop tools but belong to RiotService.
+				if child:IsA("Tool") and shopToolNames[child.Name] and child:GetAttribute("USARF_RiotWeapon") ~= true then
 					child:Destroy()
 				end
 			end

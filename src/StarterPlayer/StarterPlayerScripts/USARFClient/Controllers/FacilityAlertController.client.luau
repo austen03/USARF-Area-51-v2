@@ -9,6 +9,15 @@ local function receiveAlert(payload)
 		return
 	end
 
+	-- FacilityAlertService.ClearAlerts sends only the ids to take off the list.
+	if type(payload.removeIds) == "table" then
+		if _G.USARFRemoveAnnouncements then
+			_G.USARFRemoveAnnouncements(payload.removeIds)
+		end
+
+		return
+	end
+
 	local title = payload.title or "Facility Alert"
 	local body = payload.body or "No message provided."
 	local category = payload.category or "Facility"

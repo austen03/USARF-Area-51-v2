@@ -102,36 +102,32 @@ local function hasZoneManagementAccess(player)
 	return false
 end
 
+-- The team a player is on decides their VIP label; group rank only labels VIPs whose
+-- team has no rule, so the group owner on Federal Administration isn't shown as President.
 local function getVIPLabel(player)
 	local teamName = getTeamName(player)
 	local teamKey = getTeamKey(player)
 	local mainRank = getMainRank(player)
 
-	local bestLabel = nil
-	local bestPriority = -math.huge
+	local teamLabel, teamPriority = nil, -math.huge
+	local rankLabel, rankPriority = nil, -math.huge
 
 	for _, rule in ipairs(Config.VIPRules) do
-		local matched = false
+		local teamMatched = (rule.TeamKeys and teamKey and rule.TeamKeys[teamKey])
+			or (rule.TeamNames and teamName and rule.TeamNames[teamName])
 
-		if rule.TeamKeys and teamKey and rule.TeamKeys[teamKey] then
-			matched = true
+		if teamMatched and rule.Priority > teamPriority then
+			teamPriority = rule.Priority
+			teamLabel = rule.Label
 		end
 
-		if rule.TeamNames and teamName and rule.TeamNames[teamName] then
-			matched = true
-		end
-
-		if rule.MainGroupRanks and rule.MainGroupRanks[mainRank] then
-			matched = true
-		end
-
-		if matched and rule.Priority > bestPriority then
-			bestPriority = rule.Priority
-			bestLabel = rule.Label
+		if rule.MainGroupRanks and rule.MainGroupRanks[mainRank] and rule.Priority > rankPriority then
+			rankPriority = rule.Priority
+			rankLabel = rule.Label
 		end
 	end
 
-	return bestLabel
+	return teamLabel or rankLabel
 end
 
 local function getLocationPriority(part)
