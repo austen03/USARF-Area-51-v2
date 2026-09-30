@@ -173,6 +173,35 @@ local function getSheetOverride(player)
 	return nil
 end
 
+-- True when the player holds a QA role and this server is in one of the QA games.
+function CmdrPermissionService.IsQA(player)
+	local qaConfig = CmdrAdminConfig.QA
+
+	if not player or not qaConfig or qaConfig.Enabled ~= true then
+		return false
+	end
+
+	if not (qaConfig.GameIds and qaConfig.GameIds[game.GameId]) then
+		return false
+	end
+
+	if qaConfig.Ranks and qaConfig.Ranks[safeRank(player, qaConfig.GroupId)] then
+		return true
+	end
+
+	if qaConfig.RoleNames and #qaConfig.RoleNames > 0 then
+		local success, roleName = pcall(function()
+			return player:GetRoleInGroup(qaConfig.GroupId)
+		end)
+
+		if success and table.find(qaConfig.RoleNames, roleName) then
+			return true
+		end
+	end
+
+	return false
+end
+
 function CmdrPermissionService.IsReserveServer()
 	return game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
 end
@@ -273,6 +302,7 @@ function CmdrPermissionService.GetAdminLevel(player)
 		player:SetAttribute("USARF_CmdrAdminLevel", sheetOverride.levelName)
 		player:SetAttribute("USARF_CmdrAdminLevelValue", sheetOverride.levelValue)
 		player:SetAttribute("USARF_CmdrAdminSource", "GoogleSheet")
+		player:SetAttribute("USARF_CmdrQA", CmdrPermissionService.IsQA(player))
 
 		return sheetOverride.levelName, sheetOverride.levelValue, "GoogleSheet", nil
 	end
@@ -293,6 +323,8 @@ function CmdrPermissionService.GetAdminLevel(player)
 	player:SetAttribute("USARF_CmdrAdminLevel", finalLevelName)
 	player:SetAttribute("USARF_CmdrAdminLevelValue", finalLevelValue)
 	player:SetAttribute("USARF_CmdrAdminSource", source)
+	-- Lets the top bar show the Cmdr button to QA testers, who have no admin level.
+	player:SetAttribute("USARF_CmdrQA", CmdrPermissionService.IsQA(player))
 
 	if reserveDepartmentKey then
 		player:SetAttribute("USARF_CmdrReserveDepartmentKey", reserveDepartmentKey)
@@ -342,6 +374,16 @@ function CmdrPermissionService.CanRun(player, commandName)
 				commandConfig = commandConfig,
 			}
 		end
+	end
+
+	if CmdrAdminConfig.QA and CmdrAdminConfig.QA.Commands[commandName] and CmdrPermissionService.IsQA(player) then
+		return true, nil, {
+			levelName = "QA",
+			levelValue = levelValue,
+			source = "QA",
+			path = "QA",
+			commandConfig = commandConfig,
+		}
 	end
 
 	return false, "You do not have permission to run this command.", {

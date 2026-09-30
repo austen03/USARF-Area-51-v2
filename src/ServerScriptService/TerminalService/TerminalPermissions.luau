@@ -1,6 +1,10 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
 local TerminalPermissions = {}
 
-TerminalPermissions.MainGroupId = 6033326
+TerminalPermissions.MainGroupId = MainGroupRanks.GroupId
 
 TerminalPermissions.BlockedTeams = {
 	["Test Subject"] = true,
@@ -19,7 +23,7 @@ TerminalPermissions.Levels = {
 	VPOTUS = 16,
 	POTUS = 17,
 	Developer = 18,
-	FederalAdministration = 19,
+	FederalAdministration = 21,
 	Owner = 255,
 }
 
@@ -43,7 +47,7 @@ function TerminalPermissions.GetRank(player)
 	end)
 
 	if success then
-		return result
+		return MainGroupRanks.EffectiveRank(TerminalPermissions.MainGroupId, result)
 	end
 
 	return 0
@@ -54,7 +58,7 @@ function TerminalPermissions.GetPermissionLevel(player)
 
 	if rank >= 255 then
 		return "Owner", rank
-	elseif rank >= 19 then
+	elseif MainGroupRanks.IsFederalLeadership(rank) then
 		return "FederalAdministration", rank
 	elseif rank >= 18 then
 		return "Developer", rank

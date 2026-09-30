@@ -3,7 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LoadingService = {}
 
-local MAIN_GROUP_ID = 6033326
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
+local MAIN_GROUP_ID = MainGroupRanks.GroupId
 
 local TEAM_TEST_SUBJECT = "Test Subject"
 local TEAM_PMC = "Private Military Company"
@@ -47,14 +49,14 @@ local function getClearanceLevel(player)
 	end)
 
 	if success then
-		rank = result
+		rank = MainGroupRanks.EffectiveRank(MAIN_GROUP_ID, result)
 	end
 
-	if rank >= 19 then
+	if MainGroupRanks.IsFederalLeadership(rank) then
 		return 10
 	end
 
-	if rank == 18 then
+	if MainGroupRanks.IsDeveloper(rank) then
 		return 9
 	end
 	

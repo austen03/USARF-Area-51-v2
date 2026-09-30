@@ -10,10 +10,11 @@ return function(context)
 	local levelName, levelValue, source, reserveDepartmentKey = CmdrPermissionService.GetAdminLevel(player)
 
 	return string.format(
-		"Level: %s (%s) | Source: %s | Reserve Department: %s",
+		"Level: %s (%s) | Source: %s | Reserve Department: %s | QA: %s",
 		levelName,
 		tostring(levelValue),
 		source or "None",
-		reserveDepartmentKey or "None"
+		reserveDepartmentKey or "None",
+		CmdrPermissionService.IsQA(player) and "Yes" or "No"
 	)
 end

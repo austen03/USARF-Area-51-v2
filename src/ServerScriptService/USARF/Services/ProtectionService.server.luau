@@ -12,6 +12,7 @@ local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
 
 local Config = require(ConfigFolder:WaitForChild("ProtectionConfig"))
+local MainGroupRanks = require(ConfigFolder:WaitForChild("MainGroupRanks"))
 local AuditService = require(Services:WaitForChild("AuditService"))
 
 local remote = RemotesFolder:FindFirstChild(Config.RemoteName)
@@ -50,7 +51,7 @@ local function getMainRank(player)
 		return player:GetRankInGroup(Config.MainGroupId)
 	end)
 
-	return success and rank or 0
+	return MainGroupRanks.EffectiveRank(Config.MainGroupId, success and rank or 0)
 end
 
 local function getSecretServiceRank(player)

@@ -2,8 +2,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local USARF = ReplicatedStorage:WaitForChild("USARF")
 local TeamConfig = require(USARF.Config.TeamConfig)
+local MainGroupRanks = require(USARF.Config:WaitForChild("MainGroupRanks"))
 
-local MAIN_GROUP_ID = 6033326
+local MAIN_GROUP_ID = MainGroupRanks.GroupId
 
 local RankService = {}
 
@@ -20,7 +21,7 @@ local function safeGetRank(player, groupId)
 		return 0
 	end
 
-	return result or 0
+	return MainGroupRanks.EffectiveRank(groupId, result or 0)
 end
 
 local function safeGetRole(player, groupId)

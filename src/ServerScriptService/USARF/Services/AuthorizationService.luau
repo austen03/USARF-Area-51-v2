@@ -1,6 +1,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
 local AuthorizationService = {}
 
 local REMOTE_FOLDER_NAME = "USARF_Remotes"
@@ -108,10 +110,10 @@ local function canAuthorize(player)
 	local rank = 0
 
 	pcall(function()
-		rank = player:GetRankInGroup(6033326)
+		rank = player:GetRankInGroup(MainGroupRanks.GroupId)
 	end)
 
-	return rank >= 13
+	return MainGroupRanks.EffectiveRank(MainGroupRanks.GroupId, rank) >= 13
 end
 
 function AuthorizationService.IsTestSubject(player)

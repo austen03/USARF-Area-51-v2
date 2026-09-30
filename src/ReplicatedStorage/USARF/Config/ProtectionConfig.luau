@@ -54,7 +54,7 @@ ProtectionConfig.AccessRules = {
 ProtectionConfig.ZoneManagement = {
 	SecretServiceOnly = true,
 	SecretServiceMinimumRank = 1,
-	LeadershipMinimumRank = 19,
+	LeadershipMinimumRank = 21, -- Federal Administrator and above
 }
 
 ProtectionConfig.VIPRules = {
@@ -81,7 +81,7 @@ ProtectionConfig.VIPRules = {
 			["Vice President of the United States"] = true,
 		},
 		MainGroupRanks = {
-			[20] = true,
+			[22] = true, -- Federal Manager
 		},
 		Priority = 90,
 	},
@@ -97,7 +97,7 @@ ProtectionConfig.VIPRules = {
 			["Presidential Cabinet"] = true,
 		},
 		MainGroupRanks = {
-			[19] = true,
+			[21] = true, -- Federal Administrator
 		},
 		Priority = 80,
 	},

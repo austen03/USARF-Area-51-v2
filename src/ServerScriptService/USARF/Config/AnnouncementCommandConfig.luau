@@ -68,9 +68,10 @@ Config.ScopeStyle = {
 	},
 }
 
+-- Main group: 21 Federal Administrator, 22 Federal Manager, 255 Federal Overseer.
 Config.MaskAllowedRanks = {
-	[19] = true,
-	[20] = true,
+	[21] = true,
+	[22] = true,
 	[255] = true,
 }
 
@@ -78,8 +79,9 @@ local serverRanks = {
 	[Config.GROUP_MAIN] = {
 		[17] = true,
 		[18] = true,
-		[19] = true,
 		[20] = true,
+		[21] = true,
+		[22] = true,
 		[255] = true,
 	},
 
@@ -106,8 +108,9 @@ Config.AllowedRanks = {
 	developer = {
 		[Config.GROUP_MAIN] = {
 			[18] = true,
-			[19] = true,
 			[20] = true,
+			[21] = true,
+			[22] = true,
 			[255] = true,
 		},
 
@@ -128,8 +131,9 @@ Config.AllowedRanks = {
 			[16] = true,
 			[17] = true,
 			[18] = true,
-			[19] = true,
 			[20] = true,
+			[21] = true,
+			[22] = true,
 			[255] = true,
 		},
 	},
@@ -141,8 +145,9 @@ Config.AllowedRanks = {
 			[16] = true,
 			[17] = true,
 			[18] = true,
-			[19] = true,
 			[20] = true,
+			[21] = true,
+			[22] = true,
 			[255] = true,
 		},
 
@@ -157,8 +162,9 @@ Config.AllowedRanks = {
 		[Config.GROUP_MAIN] = {
 			[17] = true,
 			[18] = true,
-			[19] = true,
 			[20] = true,
+			[21] = true,
+			[22] = true,
 			[255] = true,
 		},
 	},
@@ -169,8 +175,9 @@ Config.AllowedRanks = {
 			[16] = true,
 			[17] = true,
 			[18] = true,
-			[19] = true,
 			[20] = true,
+			[21] = true,
+			[22] = true,
 			[255] = true,
 		},
 

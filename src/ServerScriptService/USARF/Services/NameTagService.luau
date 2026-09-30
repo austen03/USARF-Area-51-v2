@@ -22,9 +22,11 @@ pcall(function()
 	EconomyConfig = require(ReplicatedStorage.USARF.Config:WaitForChild("EconomyConfig"))
 end)
 
+local MainGroupRanks = require(ReplicatedStorage.USARF.Config:WaitForChild("MainGroupRanks"))
+
 local NameTagService = {}
 
-local MAIN_GROUP_ID = 6033326
+local MAIN_GROUP_ID = MainGroupRanks.GroupId
 local MOD_GROUP_ID = 8647541
 local DEV_GROUP_ID = 6773540
 
@@ -156,7 +158,7 @@ local departmentRankLastFetch = {}
 local testSubjectNumbers = {}
 local started = false
 
-local function safeRank(player, groupId)
+local function getRawRank(player, groupId)
 	local success, result = pcall(function()
 		return player:GetRankInGroup(groupId)
 	end)
@@ -166,6 +168,11 @@ local function safeRank(player, groupId)
 	end
 
 	return result or 0
+end
+
+-- Rank for titles, clearance and badges: QA counts as a plain member here.
+local function safeRank(player, groupId)
+	return MainGroupRanks.EffectiveRank(groupId, getRawRank(player, groupId))
 end
 
 local function trimText(value)
@@ -536,7 +543,7 @@ local function isSpecialTitleRank(player)
 		return true
 	end
 
-	if mainRank >= 19 then
+	if MainGroupRanks.IsFederalLeadership(mainRank) then
 		return true
 	end
 
@@ -575,9 +582,9 @@ local function getClearanceLevel(player)
 
 	local mainRank = safeRank(player, MAIN_GROUP_ID)
 
-	if mainRank >= 19 then
+	if MainGroupRanks.IsFederalLeadership(mainRank) then
 		return 10
-	elseif mainRank == 18 then
+	elseif MainGroupRanks.IsDeveloper(mainRank) then
 		return 9
 	elseif mainRank >= 16 then
 		return 10
@@ -640,12 +647,17 @@ local function getBadgeMap(player)
 		badges.Owner = true
 	end
 
-	if mainRank == 19 or mainRank == 20 then
+	if mainRank == MainGroupRanks.FederalAdministrator or mainRank == MainGroupRanks.FederalManager then
 		badges.ExecutiveLeadership = true
 	end
 
-	if mainRank == 18 or devRank >= 3 then
+	if MainGroupRanks.IsDeveloper(mainRank) or devRank >= 3 then
 		badges.Developer = true
+	end
+
+	-- QA testers get the QA badge from their group rank (the sheet can grant it too).
+	if getRawRank(player, MAIN_GROUP_ID) == MainGroupRanks.QA then
+		badges.QA = true
 	end
 
 	if modRank == 2 or modRank >= 7 then

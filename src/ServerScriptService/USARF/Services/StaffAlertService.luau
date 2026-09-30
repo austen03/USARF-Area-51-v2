@@ -13,6 +13,7 @@ local Services = USARFServer:WaitForChild("Services")
 local AuditService = require(Services:WaitForChild("AuditService"))
 local CaseIdService = require(Services:WaitForChild("CaseIdService"))
 local RadioConfig = require(USARF.Config.RadioConfig)
+local MainGroupRanks = require(USARF.Config:WaitForChild("MainGroupRanks"))
 
 local StaffAlertService = {}
 
@@ -28,7 +29,7 @@ local function safeGetRank(player, groupId)
 		return 0
 	end
 
-	return result or 0
+	return MainGroupRanks.EffectiveRank(groupId, result or 0)
 end
 
 local function canReceiveStaffAlert(player)

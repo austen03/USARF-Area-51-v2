@@ -56,6 +56,7 @@ local function hasCmdrAccess()
 	)
 
 	return value >= 1
+		or Player:GetAttribute("USARF_CmdrQA") == true
 		or level == "Training"
 		or level == "VPOTUS_POTUS"
 		or level == "Moderator"
@@ -265,6 +266,10 @@ Player:GetAttributeChangedSignal(
 
 Player:GetAttributeChangedSignal(
 	"USARF_CmdrAdminLevelValue"
+):Connect(updateTopbarVisibility)
+
+Player:GetAttributeChangedSignal(
+	"USARF_CmdrQA"
 ):Connect(updateTopbarVisibility)
 
 Player:GetAttributeChangedSignal(

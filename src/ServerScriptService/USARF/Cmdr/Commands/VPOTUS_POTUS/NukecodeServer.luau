@@ -3,14 +3,16 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Services = ServerScriptService:WaitForChild("USARF"):WaitForChild("Services")
 
+local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+
 local function getMainRank(player)
 	local rank = 0
 
 	pcall(function()
-		rank = player:GetRankInGroup(6033326)
+		rank = player:GetRankInGroup(MainGroupRanks.GroupId)
 	end)
 
-	return rank
+	return MainGroupRanks.EffectiveRank(MainGroupRanks.GroupId, rank)
 end
 
 local function canViewCode(player)

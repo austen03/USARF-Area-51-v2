@@ -10,7 +10,7 @@ MainMenuConfig.AccentColor = Color3.fromRGB(60, 145, 255)
 --- Can see and join all reserve servers regardless of being in department groups -- 
 MainMenuConfig.ReservedServerAdmin = {
 	MainGroupId = 6033326,
-	MinRank = 19,
+	MinRank = 21, -- Federal Administrator and above
 }
 
 MainMenuConfig.DepartmentImages = {

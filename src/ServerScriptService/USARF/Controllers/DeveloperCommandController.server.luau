@@ -95,7 +95,8 @@ local function unfreezeCharacter(player)
 end
 
 FreecamStateRemote.OnServerEvent:Connect(function(player, active)
-	if not CmdrPermissionService.HasLevel(player, "Developer") then
+	-- Anyone allowed to run freecam (Developers, and QA testers in QA games).
+	if not CmdrPermissionService.CanRun(player, "freecam") then
 		unfreezeCharacter(player)
 		return
 	end

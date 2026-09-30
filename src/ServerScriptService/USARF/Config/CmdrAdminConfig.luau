@@ -46,10 +46,12 @@ CmdrAdminConfig.MainServerRanks = {
 	MainGroup = {
 		GroupId = 6033326,
 
+		-- 19 (QA) has no level; QA testers get CmdrAdminConfig.QA.Commands instead.
 		ExactRanks = {
-			[255] = "Owner",
-			[20] = "Administrator",
-			[19] = "Administrator",
+			[255] = "Owner", -- Federal Overseer
+			[22] = "Administrator", -- Federal Manager
+			[21] = "Administrator", -- Federal Administrator
+			[20] = "Developer", -- A51 v2 Developer
 			[18] = "Developer",
 			[17] = "VPOTUS_POTUS",
 			[16] = "VPOTUS_POTUS",
@@ -73,6 +75,44 @@ CmdrAdminConfig.MainServerRanks = {
 				Level = "Developer",
 			},
 		},
+	},
+}
+
+-- QA testers: a fixed list of commands, only in the listed games. Separate from the
+-- level ladder above, so it never grants anything beyond Commands and never applies in
+-- the live game. A player matches by main-group rank or role name (in-game APIs can't
+-- see role ids). Everywhere else QA counts as a plain member (see MainGroupRanks).
+CmdrAdminConfig.QA = {
+	Enabled = true,
+
+	-- game.GameId (the universe), not the place id. 3953313565 = A51 [DEV TEST].
+	GameIds = {
+		[3953313565] = true,
+	},
+
+	GroupId = 6033326,
+	RoleNames = {},
+	Ranks = {
+		[19] = true, -- QA
+	},
+
+	DisplayGroup = "QA",
+
+	Commands = {
+		cmdrlevel = true,
+		givetools = true,
+		heal = true,
+		help = true,
+		to = true,
+		tools = true,
+		uptime = true,
+		authorize = true,
+		addcash = true,
+		addgold = true,
+		doublepaycheck = true,
+		riot = true,
+		getcurrency = true,
+		freecam = true,
 	},
 }
 
