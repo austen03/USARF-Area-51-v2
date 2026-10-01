@@ -40,7 +40,7 @@ LockdownConfig.Levels = {
 LockdownConfig.DefaultDoorBehavior = {
 	[0] = "Normal",
 	[1] = "Normal",
-	[2] = "Locked",
+	[2] = "Normal",
 	[3] = "Locked",
 	[4] = "Locked",
 }

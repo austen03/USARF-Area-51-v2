@@ -46,7 +46,6 @@ CmdrAdminConfig.MainServerRanks = {
 	MainGroup = {
 		GroupId = 6033326,
 
-		-- 19 (QA) has no level; QA testers get CmdrAdminConfig.QA.Commands instead.
 		ExactRanks = {
 			[255] = "Owner", -- Federal Overseer
 			[22] = "Administrator", -- Federal Manager
@@ -78,14 +77,9 @@ CmdrAdminConfig.MainServerRanks = {
 	},
 }
 
--- QA testers: a fixed list of commands, only in the listed games. Separate from the
--- level ladder above, so it never grants anything beyond Commands and never applies in
--- the live game. A player matches by main-group rank or role name (in-game APIs can't
--- see role ids). Everywhere else QA counts as a plain member (see MainGroupRanks).
 CmdrAdminConfig.QA = {
 	Enabled = true,
 
-	-- game.GameId (the universe), not the place id. 3953313565 = A51 [DEV TEST].
 	GameIds = {
 		[3953313565] = true,
 	},
@@ -93,7 +87,7 @@ CmdrAdminConfig.QA = {
 	GroupId = 6033326,
 	RoleNames = {},
 	Ranks = {
-		[19] = true, -- QA
+		[19] = true,
 	},
 
 	DisplayGroup = "QA",
