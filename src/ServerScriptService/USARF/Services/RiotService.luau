@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local Teams = game:GetService("Teams")
 
 local RiotService = {}
 
@@ -87,10 +88,26 @@ local characterConnections = {}
 local started = false
 local endToken = 0
 
+-- AccessService reads "door*" attributes off the player's Team as door tags, so flipping this
+-- one on the Test Subject team(s) lets DoorSettings AllowedList/DeniedList react to the riot.
+local function setRiotDoorTag(active)
+	local tagName = RiotConfig.RiotDoorTag or "doorRiot"
+
+	for teamName in pairs(RiotConfig.TestSubjectTeams or {}) do
+		local team = Teams:FindFirstChild(teamName)
+
+		if team and team:IsA("Team") then
+			team:SetAttribute(tagName, active)
+		end
+	end
+end
+
 local function replicateRiotState()
 	RiotActiveValue.Value = state.Active == true
 	RiotStageValue.Value = tonumber(state.Stage) or 0
 	RiotEndsAtValue.Value = tonumber(state.EndsAt) or 0
+
+	setRiotDoorTag(state.Active == true and state.Stage >= (RiotConfig.MinimumStageForClearance or 3))
 end
 
 local function getStageInfo(stage)
