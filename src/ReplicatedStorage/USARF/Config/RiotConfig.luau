@@ -18,6 +18,10 @@ RiotConfig.MinimumStageForClearance = 3
 
 RiotConfig.RiotClearanceLevel = 4
 
+-- Door tag set to true on the Test Subject team(s) while a riot is active, and false when it ends.
+-- Add it to a DoorSettings AllowedList to let rioters through, or to a DeniedList to keep them out.
+RiotConfig.RiotDoorTag = "doorRiot"
+
 RiotConfig.TestSubjectTeams = {
 	["Test Subject"] = true,
 }
