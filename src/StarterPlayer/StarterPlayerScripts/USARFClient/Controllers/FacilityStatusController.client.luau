@@ -87,6 +87,55 @@ local STATUS_STYLES = {
 		stroke = Color3.fromRGB(255, 120, 40),
 		flash = false,
 	},
+
+	-- The rest match the statuses the facilitystatus command can set (keys are its uppercased names).
+	SECURE = {
+		text = "FACILITY SECURE",
+		subtitle = "Facility is secure.",
+		color = Color3.fromRGB(80, 160, 255),
+		stroke = Color3.fromRGB(80, 160, 255),
+		flash = false,
+	},
+
+	ALERT = {
+		text = "SECURITY ALERT",
+		subtitle = "Facility alert active.",
+		color = Color3.fromRGB(255, 165, 0),
+		stroke = Color3.fromRGB(255, 165, 0),
+		flash = false,
+	},
+
+	["HOSTILE FORCES"] = {
+		text = "HOSTILE FORCES",
+		subtitle = "Hostile forces detected.",
+		color = Color3.fromRGB(255, 70, 20),
+		stroke = Color3.fromRGB(255, 70, 20),
+		flash = true,
+	},
+
+	UFO = {
+		text = "UFO SIGHTING",
+		subtitle = "Unidentified aerial activity detected.",
+		color = Color3.fromRGB(0, 225, 255),
+		stroke = Color3.fromRGB(0, 225, 255),
+		flash = true,
+	},
+
+	["CODE 1"] = {
+		text = "CODE 1",
+		subtitle = "Code 1 declared.",
+		color = Color3.fromRGB(255, 45, 95),
+		stroke = Color3.fromRGB(255, 45, 95),
+		flash = true,
+	},
+
+	MAINTENANCE = {
+		text = "MAINTENANCE",
+		subtitle = "Maintenance operations active.",
+		color = Color3.fromRGB(160, 175, 195),
+		stroke = Color3.fromRGB(160, 175, 195),
+		flash = false,
+	},
 }
 
 local function formatTime(seconds)
@@ -280,6 +329,13 @@ _G.USARFSetFacilityStatus = setStatus
 
 if FacilityStatusRemote then
 	FacilityStatusRemote.OnClientEvent:Connect(function(status, subtitle)
+		-- NORMAL means "back to the live facility state", so an active riot or lockdown still
+		-- shows instead of being covered by a green banner.
+		if string.upper(tostring(status)) == "NORMAL" then
+			refreshFromFacilityState()
+			return
+		end
+
 		setStatus(status, subtitle)
 	end)
 end

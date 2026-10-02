@@ -1709,6 +1709,12 @@ function UniformService.AttachRankTab(
 	return attachSurfaceGuiTemplate(character, rankTabInfo, DEFAULT_RANK_TAB_TEMPLATE, attachmentName or "RankTab")
 end
 
+local function invalidatePendingApply(player: Player): number
+	local nextGeneration = (applyGenerations[player] or 0) + 1
+	applyGenerations[player] = nextGeneration
+	return nextGeneration
+end
+
 function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 	local character = player.Character
 
@@ -1716,7 +1722,20 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		return
 	end
 
+	-- Applies can overlap (team + TeamColor change, respawn, Cmdr). Each one clears the old morph
+	-- and then yields restoring the avatar, so without this two applies both add a full morph
+	-- and players end up wearing two helmets. The newest apply wins; older ones bail out.
+	local generation = invalidatePendingApply(player)
+
+	local function superseded(): boolean
+		return applyGenerations[player] ~= generation or player.Character ~= character
+	end
+
 	restoreOriginalAppearance(player, character)
+
+	if superseded() then
+		return
+	end
 
 	if CovertState.IsCovert(player) then
 		local testSubjectTeam = USARFConfig.Teams[CovertConfig.TeamKey]
@@ -1767,6 +1786,15 @@ function UniformService.ApplyUniform(player: Player, requestedTeam: any?)
 		warn(`USARF UniformService: could not apply uniform to {player.Name}; Humanoid missing`)
 		return
 	end
+
+	-- Resolving the morph can yield on group-rank lookups, so check again, then make sure
+	-- nothing from an earlier apply is still on the character before adding pieces.
+	if superseded() then
+		return
+	end
+
+	clearAttachmentFolder(character)
+	removeOldMorphItems(character)
 
 	if morphModel then
 		if configValue(teamConfig, "RemoveExistingClothing", true) then
@@ -1854,12 +1882,6 @@ function UniformService.ApplyUniformToCharacter(character: Model, teamConfig: an
 
 	character:SetAttribute("USARFUniformApplied", true)
 	AvatarBlacklistService.FilterCharacter(character)
-end
-
-local function invalidatePendingApply(player: Player): number
-	local nextGeneration = (applyGenerations[player] or 0) + 1
-	applyGenerations[player] = nextGeneration
-	return nextGeneration
 end
 
 local function applyUniformDeferred(player: Player)

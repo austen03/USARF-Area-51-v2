@@ -1066,6 +1066,9 @@ function NameTagService.Apply(player)
 	container.Name = "Container"
 	container.BackgroundTransparency = 1
 	container.Size = UDim2.new(1, 0, 1, 0)
+	-- Centred so the client's distance UIScale shrinks the tag toward its middle, not its top-left corner.
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.new(0.5, 0, 0.5, 0)
 	container.Parent = billboard
 
 	local layout = Instance.new("UIListLayout")
