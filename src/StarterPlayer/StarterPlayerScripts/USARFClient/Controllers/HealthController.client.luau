@@ -1,6 +1,7 @@
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
+local TextChatService = game:GetService("TextChatService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -103,6 +104,22 @@ local function getResponsiveScale()
 	return 1
 end
 
+-- The chat input bar sits under the top bar on the left, where this panel goes. Its
+-- Absolute* values are measured below the top bar; 0 when the bar is hidden (e.g. Cmdr open).
+local function getChatBarBottom()
+	local success, bottom = pcall(function()
+		local chatBar = TextChatService.ChatInputBarConfiguration
+
+		if not chatBar.Enabled then
+			return 0
+		end
+
+		return chatBar.AbsolutePosition.Y + chatBar.AbsoluteSize.Y
+	end)
+
+	return success and tonumber(bottom) or 0
+end
+
 local function applyResponsiveLayout()
 	if not root then
 		return
@@ -126,7 +143,7 @@ local function applyResponsiveLayout()
 	end
 
 	local topbarHeight = GuiService:GetGuiInset().Y
-	root.Position = UDim2.new(0, left, 0, topbarHeight + 14)
+	root.Position = UDim2.new(0, left, 0, topbarHeight + math.max(14, getChatBarBottom() + 10))
 end
 
 local function setVisible(visible)
@@ -353,6 +370,14 @@ local function connectViewport()
 		if camera then
 			camera:GetPropertyChangedSignal("ViewportSize"):Connect(applyResponsiveLayout)
 			applyResponsiveLayout()
+		end
+	end)
+
+	pcall(function()
+		local chatBar = TextChatService.ChatInputBarConfiguration
+
+		for _, property in ipairs({ "Enabled", "AbsolutePosition", "AbsoluteSize" }) do
+			chatBar:GetPropertyChangedSignal(property):Connect(applyResponsiveLayout)
 		end
 	end)
 end

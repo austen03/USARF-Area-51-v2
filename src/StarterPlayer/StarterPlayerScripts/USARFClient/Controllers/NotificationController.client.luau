@@ -1,4 +1,5 @@
 local GuiService = game:GetService("GuiService")
+local TextChatService = game:GetService("TextChatService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -68,13 +69,28 @@ local function getVisibleHealthPanel()
 	return nil
 end
 
--- Notifications stack in the top-left, directly below the health panel (or below the top bar
+-- Bottom of the chat input bar, measured below the top bar; 0 when it is hidden.
+local function getChatBarBottom()
+	local success, bottom = pcall(function()
+		local chatBar = TextChatService.ChatInputBarConfiguration
+
+		if not chatBar.Enabled then
+			return 0
+		end
+
+		return chatBar.AbsolutePosition.Y + chatBar.AbsoluteSize.Y
+	end)
+
+	return success and tonumber(bottom) or 0
+end
+
+-- Notifications stack in the top-left, directly below the health panel (or below the chat bar
 -- when it is hidden), so they never cover the radio / Protection System in the bottom-right.
 local function applyNotificationLayout()
 	local healthPanel = getVisibleHealthPanel()
 	local inset = GuiService:GetGuiInset()
 	local left = LEFT_PADDING
-	local top = inset.Y + UI_GAP
+	local top = inset.Y + getChatBarBottom() + UI_GAP
 
 	if healthPanel then
 		-- AbsolutePosition is measured below the top bar inset, but this ScreenGui ignores the
