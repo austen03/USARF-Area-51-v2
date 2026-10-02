@@ -12,6 +12,12 @@ local MAX_VISIBLE_DISTANCE_DESKTOP = 175
 local MAX_VISIBLE_DISTANCE_MOBILE = 130
 local ALWAYS_SHOW_CLOSE_DISTANCE = 18
 
+-- Tags are built in pixels, so without this they stay the same size on screen at any range.
+-- Full size up to SCALE_FULL_SIZE_DISTANCE, then shrink with distance like the character does.
+local SCALE_NAME = "DistanceScale"
+local SCALE_FULL_SIZE_DISTANCE = 20
+local SCALE_MIN = 0.35
+
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 local lastCheck = 0
@@ -144,7 +150,37 @@ local function updatePlayer(player)
 	tag.Enabled = hasLineOfSight(player)
 end
 
+local function updateTagScale(player, camera)
+	local tag = getNameTag(player)
+	local container = tag and tag:FindFirstChild("Container")
+	local head = getHead(player)
+
+	if not container or not head then
+		return
+	end
+
+	local scale = container:FindFirstChild(SCALE_NAME)
+
+	if not scale then
+		scale = Instance.new("UIScale")
+		scale.Name = SCALE_NAME
+		scale.Parent = container
+	end
+
+	local distance = (camera.CFrame.Position - head.Position).Magnitude
+	scale.Scale = math.clamp(SCALE_FULL_SIZE_DISTANCE / math.max(distance, 1), SCALE_MIN, 1)
+end
+
 RunService.RenderStepped:Connect(function()
+	-- Scale every frame so tags resize smoothly; the line-of-sight raycasts below stay throttled.
+	local camera = getCamera()
+
+	if camera then
+		for _, player in ipairs(Players:GetPlayers()) do
+			updateTagScale(player, camera)
+		end
+	end
+
 	if os.clock() - lastCheck < CHECK_INTERVAL then
 		return
 	end
