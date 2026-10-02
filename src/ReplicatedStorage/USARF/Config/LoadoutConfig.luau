@@ -8,106 +8,118 @@ LoadoutConfig.Teams = {
 
 	["Private Military Company"] = {
 		Default = {
-			"Radio",
-			"MP5",
+			"AK-47",
 		},
 	},
 
 	["Facility Personnel"] = {
 		Default = {
-			"Radio",
-			"Flashlight",
+			"",
 		},
 	},
 
 	["Engineering & Technical"] = {
 		Default = {
-			"Radio",
-			"Flashlight",
+			"Wrench",
 		},
 	},
 
 	["Medical"] = {
 		Default = {
-			"Radio",
 			"Medkit",
 		},
 	},
 
 	["Research"] = {
 		Default = {
-			"Radio",
+			"Authorization Clipboard",
 		},
 	},
 
 	["Rules & Regulations"] = {
 		Default = {
-			"Radio",
-			"Flashlight",
+			"",
 		},
 	},
 
 	["108th Infantry"] = {
 		Default = {
-			"Radio",
 			"M4A1",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["137th MP"] = {
 		Default = {
-			"Radio",
-			"Taser",
+			"M4A1",
+			"Glock 18",
 			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["1st Spec Ops A.I.G"] = {
 		Default = {
-			"Radio",
-			"M4A1",
+			"AR15",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
+			"Riot Shield",
 		},
 	},
 
 	["CIA"] = {
 		Default = {
-			"Radio",
-			"P226",
+			"Kriss Vector",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["FBI"] = {
 		Default = {
-			"Radio",
-			"P226",
+			"SCAR-H",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["FDS"] = {
 		Default = {
-			"Radio",
-			"P226",
+			"G36C",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["Secret Service"] = {
 		Default = {
-			"Radio",
-			"P226",
+			"M27 IAR",
+			"Remington 870",
+			"Glock 18",
+			"Handcuffs",
+			"Ammo Box",
 		},
 	},
 
 	["USAF"] = {
 		Default = {
-			"Radio",
 			"M4A1",
+			"Glock 18",
+			"Ammo Box",
 		},
 	},
 
 	["DoD"] = {
 		Default = {
-			"Radio",
-			"P226",
+			"M4A1",
+			"Glock 18",
+			"Ammo Box",
 		},
 	},
 }
@@ -116,7 +128,7 @@ LoadoutConfig.Gamepasses = {
 	Minigun = "Minigun",
 	BoomBox = "BoomBox",
 	MP5 = "MP5",
-	P226 = "P226",
+	["Glock-17"] = "P226",
 }
 
 return LoadoutConfig

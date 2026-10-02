@@ -7,10 +7,9 @@ MainMenuConfig.BuildText = "AREA 51 v2"
 MainMenuConfig.BackgroundImage = ""
 MainMenuConfig.AccentColor = Color3.fromRGB(60, 145, 255)
 
---- Can see and join all reserve servers regardless of being in department groups -- 
 MainMenuConfig.ReservedServerAdmin = {
 	MainGroupId = 6033326,
-	MinRank = 21, -- Federal Administrator and above
+	MinRank = 21,
 }
 
 MainMenuConfig.DepartmentImages = {
@@ -68,7 +67,6 @@ MainMenuConfig.DepartmentColors = {
 	VicePresident = Color3.fromRGB(255, 230, 120),
 	President = Color3.fromRGB(255, 245, 160),
 }
-
 
 MainMenuConfig.DepartmentDescriptions = {
 	TestSubject = "Enter the facility as a Test Subject. Follow instructions, survive experiments, and avoid restricted zones.",

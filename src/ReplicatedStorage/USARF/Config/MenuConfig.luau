@@ -1,6 +1,6 @@
 local MenuConfig = {}
 
-MenuConfig.Version = "1.0.0"
+MenuConfig.Version = "1.0.1"
 
 MenuConfig.GameTitle = "USARF"
 MenuConfig.GameSubtitle = "UNITED STATES ANOMALOUS\nRESPONSE FACILITY"
@@ -8,7 +8,7 @@ MenuConfig.FooterMotto = "HONOR. SERVICE. SECURITY."
 MenuConfig.FooterText = "Protecting the nation from the unknown."
 MenuConfig.DeveloperText = "Developed by Facility Architects"
 
-MenuConfig.LogoImage = "rbxassetid://128584893547838"
+MenuConfig.LogoImage = "rbxassetid://95995880011029"
 
 MenuConfig.Description = [[
 The USARF (United States Anomalous Research Facility) was founded by the President of the United States to maintain national security. 

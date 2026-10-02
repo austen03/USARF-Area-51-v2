@@ -27,7 +27,7 @@ USARFConfig.Gamepasses = {
 	BoomBox = 10618250,
 	Minigun = 10528500,
 	MP5 = 10528490,
-	P226 = 10528478,
+	["Glock-17"] = 10528478,
 	PMC = 1868058877,
 	DoublePaycheck = 10528509,
 	StolenKeycard = 10528460,
@@ -375,7 +375,7 @@ USARFConfig.Teams = {
 		requirements = {
 			type = "group",
 			groupId = USARFConfig.Groups.Main,
-			minRank = 21, -- Federal Administrator and above
+			minRank = 21,
 		},
 	},
 
@@ -480,18 +480,18 @@ USARFConfig.Clearance = {
 	},
 
 	RankMap = {
-		-- QA (19) is read as a plain member (MainGroupRanks.EffectiveRank), so it never
-		-- reaches the ranks below.
-		{ minRank = 21, clearance = 10 },
-		{ exactRank = 20, clearance = 9 },
+
+		{ minRank = 21, clearance = 11 },
 		{ exactRank = 18, clearance = 9 },
-		{ minRank = 16, clearance = 10 },
-		{ minRank = 13, clearance = 9 },
-		{ minRank = 11, clearance = 7 },
+		{ exactRank = 17, clearance = 10 },
+		{ exactRank = 16, clearance = 10 },
+		{ exactRank = 15, clearance = 9 },
+		{ exactRank = 13, clearance = 8 },
+		{ exactRank = 11, clearance = 7 },
 		{ exactRank = 10, clearance = 6 },
-		{ minRank = 8, clearance = 5 },
+		{ exactRank = 8, clearance = 5 },
 		{ exactRank = 7, clearance = 4 },
-		{ minRank = 5, clearance = 3 },
+		{ exactRank = 5, clearance = 3 },
 		{ exactRank = 4, clearance = 2 },
 		{ exactRank = 3, clearance = 1 },
 	},
@@ -898,7 +898,6 @@ USARFConfig.Admin = {
 		MainGroup = {
 			GroupId = USARFConfig.Groups.Main,
 
-			-- Keep in step with CmdrAdminConfig.MainServerRanks. 19 (QA) has no level.
 			ExactRanks = {
 				[255] = "Owner", -- Federal Overseer
 				[22] = "Administrator", -- Federal Manager

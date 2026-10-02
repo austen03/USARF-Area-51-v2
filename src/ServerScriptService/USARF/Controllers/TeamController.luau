@@ -27,12 +27,7 @@ local function getOrCreate(parent, className, name)
 	return object
 end
 
--- Tells the client menu to immediately reload team access and suspension data.
-local MenuPayloadChangedRemote = getOrCreate(
-	Remotes,
-	"RemoteEvent",
-	"MenuPayloadChanged"
-)
+local MenuPayloadChangedRemote = getOrCreate(Remotes, "RemoteEvent", "MenuPayloadChanged")
 
 local USARFServer = ServerScriptService:WaitForChild("USARF")
 local Services = USARFServer:WaitForChild("Services")
@@ -65,10 +60,7 @@ local function clearDeployedAttributes(player)
 	player:SetAttribute("USARF_TeamKey", nil)
 	player:SetAttribute("USARF_TeamName", "")
 	player:SetAttribute("USARF_SpawnKey", nil)
-	player:SetAttribute(
-		"USARF_RankName",
-		RankService.GetMainGroupRank(player)
-	)
+	player:SetAttribute("USARF_RankName", RankService.GetMainGroupRank(player))
 end
 
 local function notifyMenuPayloadChanged(player, reason)
@@ -91,19 +83,11 @@ local function applyDeployedAttributes(player, access, spawnAccess, teamKey)
 	clearReturnRequest(player)
 
 	player:SetAttribute("USARF_TeamKey", teamKey)
-	player:SetAttribute(
-		"USARF_TeamName",
-		teamData.teamName or teamData.displayName or ""
-	)
-	player:SetAttribute(
-		"USARF_SpawnKey",
-		teamData.spawnKey or teamKey
-	)
+	player:SetAttribute("USARF_TeamName", teamData.teamName or teamData.displayName or "")
+	player:SetAttribute("USARF_SpawnKey", teamData.spawnKey or teamKey)
 	player:SetAttribute(
 		"USARF_RankName",
-		finalAccess.rankName
-			or originalAccess.rankName
-			or RankService.GetMainGroupRank(player)
+		finalAccess.rankName or originalAccess.rankName or RankService.GetMainGroupRank(player)
 	)
 end
 
@@ -136,10 +120,7 @@ function TeamController.SendPlayerToMenu(player, reason, options)
 	setPlayerMenuState(player, true)
 	clearDeployedAttributes(player)
 
-	player:SetAttribute(
-		"USARF_MenuReturnReason",
-		tostring(reason or "Returned to menu")
-	)
+	player:SetAttribute("USARF_MenuReturnReason", tostring(reason or "Returned to menu"))
 
 	local success, message = SpawnService.SendPlayerToDefaultSpawn(player)
 
@@ -157,10 +138,7 @@ function TeamController.SendPlayerToMenu(player, reason, options)
 		end
 	end
 
-	notifyMenuPayloadChanged(
-		player,
-		options.refreshReason or "returned_to_menu"
-	)
+	notifyMenuPayloadChanged(player, options.refreshReason or "returned_to_menu")
 
 	return success, message or reason or "Returned to menu"
 end
@@ -194,23 +172,15 @@ SelectTeamRemote.OnServerInvoke = function(player, teamKey)
 
 		return {
 			success = false,
-			message = access.requiredText
-				or access.reason
-				or "You cannot deploy to this team.",
+			message = access.requiredText or access.reason or "You cannot deploy to this team.",
 			access = access,
 		}
 	end
 
-	local success, message, spawnAccess =
-		SpawnService.SendPlayerToTeamSpawn(player, teamKey)
+	local success, message, spawnAccess = SpawnService.SendPlayerToTeamSpawn(player, teamKey)
 
 	if success then
-		applyDeployedAttributes(
-			player,
-			access,
-			spawnAccess,
-			teamKey
-		)
+		applyDeployedAttributes(player, access, spawnAccess, teamKey)
 	else
 		setPlayerMenuState(player, true)
 		notifyMenuPayloadChanged(player, "deployment_failed")
@@ -271,13 +241,9 @@ ReturnToMenuRemote.OnServerInvoke = function(player, action)
 
 		returnRequests[userId] = nil
 
-		local success, message = TeamController.SendPlayerToMenu(
-			player,
-			"Returned to menu",
-			{
-				refreshReason = "player_requested_return",
-			}
-		)
+		local success, message = TeamController.SendPlayerToMenu(player, "Returned to menu", {
+			refreshReason = "player_requested_return",
+		})
 
 		return {
 			success = success,
@@ -291,8 +257,7 @@ ReturnToMenuRemote.OnServerInvoke = function(player, action)
 	}
 end
 
-local externalSuspensionEvent =
-	Services:FindFirstChild("ExternalSuspensionChanged")
+local externalSuspensionEvent = Services:FindFirstChild("ExternalSuspensionChanged")
 
 if not externalSuspensionEvent then
 	externalSuspensionEvent = Instance.new("BindableEvent")
@@ -305,58 +270,38 @@ externalSuspensionEvent.Event:Connect(function(player)
 		return
 	end
 
-	-- First determine whether the player's currently deployed team is
-	-- actually affected by the newly received suspension.
 	local currentTeamKey = nil
 
 	if player.Team then
-		currentTeamKey =
-			TeamAccessService.ResolveTeamKey(player.Team.Name)
+		currentTeamKey = TeamAccessService.ResolveTeamKey(player.Team.Name)
 	end
 
 	local mustReturnToMenu = false
 	local access = nil
 
 	if currentTeamKey then
-		access = TeamAccessService.CanPlayerUseTeam(
-			player,
-			currentTeamKey
-		)
+		access = TeamAccessService.CanPlayerUseTeam(player, currentTeamKey)
 
-		mustReturnToMenu =
-			access.status == "suspended"
+		mustReturnToMenu = access.status == "suspended"
 	end
 
 	if mustReturnToMenu then
-		local suspensionMessage =
-			access.requiredText
+		local suspensionMessage = access.requiredText
 			or "An active suspension prevents you from remaining on this team."
 
-		TeamController.SendPlayerToMenu(
-			player,
-			suspensionMessage,
-			{
-				refreshReason = "external_suspension_enforced",
-				forceReload = true,
-			}
-		)
+		TeamController.SendPlayerToMenu(player, suspensionMessage, {
+			refreshReason = "external_suspension_enforced",
+			forceReload = true,
+		})
 	else
-		-- Even when the current team is not affected, refresh the menu so
-		-- all affected teams display their updated suspension information.
-		notifyMenuPayloadChanged(
-			player,
-			"external_suspension_updated"
-		)
+		notifyMenuPayloadChanged(player, "external_suspension_updated")
 	end
 end)
 
 Players.PlayerAdded:Connect(function(player)
 	setPlayerMenuState(player, true)
 
-	player:SetAttribute(
-		"USARF_RankName",
-		RankService.GetMainGroupRank(player)
-	)
+	player:SetAttribute("USARF_RankName", RankService.GetMainGroupRank(player))
 
 	player:SetAttribute("USARF_TeamName", "")
 	player:SetAttribute("USARF_MenuReturnReason", nil)
