@@ -23,6 +23,11 @@ pcall(function()
 	RadioService = require(Services:WaitForChild("RadioService"))
 end)
 
+local FacilityAlertService = nil
+pcall(function()
+	FacilityAlertService = require(Services:WaitForChild("FacilityAlertService"))
+end)
+
 local state = {
 	Active = false,
 	Level = 0,
@@ -148,6 +153,13 @@ function FacilityLockdownService.SetLevel(level, actor, reason)
 	end
 
 	replicateState()
+
+	-- Statuses set by command (e.g. "facilitystatus code1") aren't tied to the lockdown level,
+	-- so clients only drop them when told to. Clearing the lockdown resets them too, even when
+	-- the level was already 0.
+	if level == 0 and FacilityAlertService then
+		FacilityAlertService.SetStatus("NORMAL")
+	end
 
 	if level ~= oldLevel then
 		if level == 0 then
