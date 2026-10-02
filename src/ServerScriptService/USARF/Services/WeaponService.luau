@@ -33,6 +33,9 @@ local WEAPON_ID_ATTRIBUTE = "USARF_WeaponId"
 local ATTR_LAST_KILLER = "USARF_LastKiller"
 local ATTR_LAST_WEAPON = "USARF_LastWeapon"
 
+-- Tools tagged with this (e.g. the Riot Shield) stop bullets that hit their parts.
+local ATTR_BLOCKS_BULLETS = "USARF_BlocksBullets"
+
 local SUPPRESSION_DISTANCE = 7
 local SUPPRESSION_RANGE = 650
 local SUPPRESSION_MIN_INTENSITY = 0.25
@@ -170,6 +173,11 @@ local function makeRaycastParams(excludeList)
 	return params
 end
 
+local function isBulletBlocker(instance)
+	local tool = instance and instance:FindFirstAncestorOfClass("Tool")
+	return tool ~= nil and tool:GetAttribute(ATTR_BLOCKS_BULLETS) == true
+end
+
 local function findGlassRoot(instance, material)
 	local glassRoot = GlassService.FindGlassRoot(instance)
 
@@ -254,6 +262,11 @@ local function raycastShot(player, origin, direction, config)
 		return nil, nil
 	end
 
+	-- Shields stop the shot outright; their window is Glass, so check before glass penetration.
+	if isBulletBlocker(firstResult.Instance) then
+		return firstResult, nil
+	end
+
 	local glassConfig = config.GlassPenetration or {}
 	if glassConfig.Enabled ~= true then
 		return firstResult, nil
@@ -287,6 +300,11 @@ local function applyDamage(player, tool, result, config, damageMultiplier)
 	end
 
 	local hitPart = result.Instance
+
+	if isBulletBlocker(hitPart) then
+		return nil
+	end
+
 	local targetModel = hitPart:FindFirstAncestorOfClass("Model")
 	if not targetModel then
 		return nil
