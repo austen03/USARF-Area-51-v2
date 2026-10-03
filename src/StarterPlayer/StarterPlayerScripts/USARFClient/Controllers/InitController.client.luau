@@ -54,7 +54,6 @@ local function runCmdrCommand(commandText)
 	end
 
 	local success, result = pcall(function()
-		-- Cmdr 1.13: accessing unknown keys on CmdrClient errors, so call the Dispatcher directly.
 		CmdrClient.Dispatcher:Run(commandText)
 	end)
 

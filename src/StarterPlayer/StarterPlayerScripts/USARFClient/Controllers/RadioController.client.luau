@@ -21,7 +21,6 @@ local LoadingScreen = Gui:FindFirstChild("LoadingScreen")
 local MainMenu = Gui:FindFirstChild("MainMenu")
 
 local Popups = Gui:WaitForChild("Popups")
--- Popups is a transparent, non-interactive container; if it is hidden none of its panels can show.
 Popups.Visible = true
 local RadioPanel = Popups:WaitForChild("RadioPanel")
 
@@ -116,19 +115,14 @@ local function makeStroke(parent, color, transparency)
 end
 
 local function isModMode()
-	return Player:GetAttribute("USARF_RadioModMode") == true
-		or Player:GetAttribute("USARF_ModMode") == true
+	return Player:GetAttribute("USARF_RadioModMode") == true or Player:GetAttribute("USARF_ModMode") == true
 end
 
 local function isModeratorOrHigher()
 	local value = tonumber(Player:GetAttribute("USARF_CmdrAdminLevelValue")) or 0
 	local level = tostring(Player:GetAttribute("USARF_CmdrAdminLevel") or "")
 
-	return value >= 3
-		or level == "Moderator"
-		or level == "Administrator"
-		or level == "Developer"
-		or level == "Owner"
+	return value >= 3 or level == "Moderator" or level == "Administrator" or level == "Developer" or level == "Owner"
 end
 
 local function applyClientAccessOverrides(serverChannels, serverMessages, serverCanSeeRedacted)
@@ -269,7 +263,8 @@ local function applyHudLayout()
 
 	if mobile then
 		RadioPanel.Position = UDim2.new(1, -10, 1, -10)
-		RadioPanel.Size = UDim2.new(0, math.clamp(viewport.X * 0.54, 300, 440), 0, math.clamp(viewport.Y * 0.44, 180, 235))
+		RadioPanel.Size =
+			UDim2.new(0, math.clamp(viewport.X * 0.54, 300, 440), 0, math.clamp(viewport.Y * 0.44, 180, 235))
 	else
 		RadioPanel.Position = UDim2.new(1, -24, 1, -24)
 		RadioPanel.Size = UDim2.new(0, 500, 0, 300)
@@ -367,8 +362,7 @@ local function applyHudLayout()
 end
 
 local function isInMenuOrLoading()
-	return (LoadingScreen and LoadingScreen.Visible)
-		or (MainMenu and MainMenu.Visible)
+	return (LoadingScreen and LoadingScreen.Visible) or (MainMenu and MainMenu.Visible)
 end
 
 local function shouldShowRadioHud()
@@ -405,7 +399,12 @@ local function toColor3(tbl)
 end
 
 local function colorToHex(color)
-	return string.format("#%02X%02X%02X", math.floor(color.R * 255), math.floor(color.G * 255), math.floor(color.B * 255))
+	return string.format(
+		"#%02X%02X%02X",
+		math.floor(color.R * 255),
+		math.floor(color.G * 255),
+		math.floor(color.B * 255)
+	)
 end
 
 local function escapeRichText(text)
@@ -560,7 +559,8 @@ local function createMessage(packet)
 		end
 	end
 
-	local prefixColor = packet.isSystem and (CHANNEL_COLORS[packet.channel] or Color3.fromRGB(255, 200, 60)) or toColor3(packet.teamColor)
+	local prefixColor = packet.isSystem and (CHANNEL_COLORS[packet.channel] or Color3.fromRGB(255, 200, 60))
+		or toColor3(packet.teamColor)
 	local prefixHex = colorToHex(prefixColor)
 	local prefixText = packet.isSystem and "SYSTEM" or tostring(packet.teamAbv or "N/A")
 	local nameText = getDisplayName(packet)
@@ -579,18 +579,30 @@ local function createMessage(packet)
 	MessageLabel.Size = UDim2.new(1, -16, 1, -6)
 
 	if packet.isSystem then
-		MessageLabel.Text =
-			'<font color="' .. prefixHex .. '"><b>[SYSTEM]</b></font> ' ..
-			'<font color="#888888">(' .. timeText .. '):</font> ' ..
-			bodyText
+		MessageLabel.Text = '<font color="'
+			.. prefixHex
+			.. '"><b>[SYSTEM]</b></font> '
+			.. '<font color="#888888">('
+			.. timeText
+			.. "):</font> "
+			.. bodyText
 	else
 		local revealColor = packet.redacted and state.canSeeRedacted and "#C9A6FF" or "#FFFFFF"
 
-		MessageLabel.Text =
-			'<font color="' .. prefixHex .. '"><b>[' .. escapeRichText(prefixText) .. ']</b></font> ' ..
-			'<font color="' .. revealColor .. '"><b>' .. escapeRichText(nameText) .. '</b></font> ' ..
-			'<font color="#888888">(' .. timeText .. '):</font> ' ..
-			bodyText
+		MessageLabel.Text = '<font color="'
+			.. prefixHex
+			.. '"><b>['
+			.. escapeRichText(prefixText)
+			.. "]</b></font> "
+			.. '<font color="'
+			.. revealColor
+			.. '"><b>'
+			.. escapeRichText(nameText)
+			.. "</b></font> "
+			.. '<font color="#888888">('
+			.. timeText
+			.. "):</font> "
+			.. bodyText
 	end
 
 	task.defer(function()
@@ -686,7 +698,8 @@ local function selectChannel(channelKey)
 		local channelColor = CHANNEL_COLORS[key] or SEND_PURPLE
 
 		button.TextColor3 = selected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(165, 165, 175)
-		button.BackgroundColor3 = selected and channelColor:Lerp(Color3.new(1, 1, 1), 0.15) or Color3.fromRGB(32, 32, 40)
+		button.BackgroundColor3 = selected and channelColor:Lerp(Color3.new(1, 1, 1), 0.15)
+			or Color3.fromRGB(32, 32, 40)
 	end
 
 	local selectedChannel = getSelectedChannel(channelKey)
@@ -794,7 +807,13 @@ local function makePacketKey(packet)
 		return tostring(packet.id)
 	end
 
-	return tostring(packet.channel) .. "|" .. tostring(packet.fromUserId) .. "|" .. tostring(packet.when) .. "|" .. tostring(packet.text)
+	return tostring(packet.channel)
+		.. "|"
+		.. tostring(packet.fromUserId)
+		.. "|"
+		.. tostring(packet.when)
+		.. "|"
+		.. tostring(packet.text)
 end
 
 local function rebuildKnownMessageIds()
@@ -824,11 +843,8 @@ local function loadPayload(forceOpen)
 		return
 	end
 
-	local channels, messages, canSeeRedacted = applyClientAccessOverrides(
-		result.channels or {},
-		result.messages or {},
-		result.canSeeRedacted == true
-	)
+	local channels, messages, canSeeRedacted =
+		applyClientAccessOverrides(result.channels or {}, result.messages or {}, result.canSeeRedacted == true)
 
 	state.channels = channels
 	state.messages = messages

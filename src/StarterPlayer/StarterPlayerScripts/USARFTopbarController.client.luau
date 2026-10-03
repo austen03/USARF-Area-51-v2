@@ -8,9 +8,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local Gui = PlayerGui:WaitForChild("USARFGui")
 local TopBar = Gui:WaitForChild("TopBar")
 
-local Icon = require(
-	ReplicatedStorage:WaitForChild("TopbarPlus")
-)
+local Icon = require(ReplicatedStorage:WaitForChild("TopbarPlus"))
 
 local CMDR_ICON_IMAGE = "rbxassetid://83689392665917"
 
@@ -47,13 +45,9 @@ local function isInMenuOrLoading()
 end
 
 local function hasCmdrAccess()
-	local value = tonumber(
-		Player:GetAttribute("USARF_CmdrAdminLevelValue")
-	) or 0
+	local value = tonumber(Player:GetAttribute("USARF_CmdrAdminLevelValue")) or 0
 
-	local level = tostring(
-		Player:GetAttribute("USARF_CmdrAdminLevel") or "None"
-	)
+	local level = tostring(Player:GetAttribute("USARF_CmdrAdminLevel") or "None")
 
 	return value >= 1
 		or Player:GetAttribute("USARF_CmdrQA") == true
@@ -72,26 +66,13 @@ local announcementsIcon = Icon.new()
 	:setOrder(1)
 	:autoDeselect(false)
 
-local settingsIcon = Icon.new()
-	:setName("USARF_Settings")
-	:setLabel("⚙")
-	:setCaption("Settings")
-	:setOrder(2)
-	:autoDeselect(false)
+local settingsIcon =
+	Icon.new():setName("USARF_Settings"):setLabel("⚙"):setCaption("Settings"):setOrder(2):autoDeselect(false)
 
-local radioIcon = Icon.new()
-	:setName("USARF_Radio")
-	:setLabel("▦")
-	:setCaption("Radio")
-	:setOrder(3)
-	:autoDeselect(false)
+local radioIcon = Icon.new():setName("USARF_Radio"):setLabel("▦"):setCaption("Radio"):setOrder(3):autoDeselect(false)
 
-local clansIcon = Icon.new()
-	:setName("USARF_Clans")
-	:setLabel("Clans")
-	:setCaption("Clans")
-	:setOrder(4)
-	:autoDeselect(false)
+local clansIcon =
+	Icon.new():setName("USARF_Clans"):setLabel("Clans"):setCaption("Clans"):setOrder(4):autoDeselect(false)
 
 local cmdrIcon = Icon.new()
 	:setName("USARF_Cmdr")
@@ -129,38 +110,19 @@ local function updateTopbarVisibility()
 	local hidden = isInMenuOrLoading()
 	local settings = _G.USARFSettings
 
-	announcementsIcon:setEnabled(
-		not hidden
-			and (
-				not settings
-				or settings.Announcements ~= false
-			)
-	)
+	announcementsIcon:setEnabled(not hidden and (not settings or settings.Announcements ~= false))
 
 	settingsIcon:setEnabled(not hidden)
 
-	radioIcon:setEnabled(
-		not hidden
-			and Player:GetAttribute("USARF_RadioHidden") ~= true
-	)
+	radioIcon:setEnabled(not hidden and Player:GetAttribute("USARF_RadioHidden") ~= true)
 
 	clansIcon:setEnabled(not hidden)
 
-	cmdrIcon:setEnabled(
-		not hidden
-			and hasCmdrAccess()
-	)
+	cmdrIcon:setEnabled(not hidden and hasCmdrAccess())
 
-	devModeIcon:setEnabled(
-		not hidden
-			and Player:GetAttribute("USARF_DevMode") == true
-	)
+	devModeIcon:setEnabled(not hidden and Player:GetAttribute("USARF_DevMode") == true)
 
-	-- Set by CovertController: certified and on a team covert is allowed from.
-	covertIcon:setEnabled(
-		not hidden
-			and _G.USARFCovertAvailable == true
-	)
+	covertIcon:setEnabled(not hidden and _G.USARFCovertAvailable == true)
 
 	menuIcon:setEnabled(not hidden)
 end
@@ -169,9 +131,7 @@ local function updateAnnouncementBadge(count)
 	count = tonumber(count) or 0
 
 	if count > 0 then
-		announcementsIcon:setLabel(
-			"🔔 " .. tostring(count)
-		)
+		announcementsIcon:setLabel("🔔 " .. tostring(count))
 	else
 		announcementsIcon:setLabel("🔔")
 	end
@@ -183,10 +143,7 @@ local function safeCall(globalName)
 	if typeof(callback) == "function" then
 		callback()
 	else
-		warn(
-			"[USARFTopbarController] Missing global:",
-			globalName
-		)
+		warn("[USARFTopbarController] Missing global:", globalName)
 	end
 end
 
@@ -241,55 +198,36 @@ menuIcon.selected:Connect(function()
 end)
 
 _G.USARFUpdateTopbarVisibility = updateTopbarVisibility
-_G.USARFSetAnnouncementTopbarBadge =
-	updateAnnouncementBadge
+_G.USARFSetAnnouncementTopbarBadge = updateAnnouncementBadge
 
 _G.USARFSetMenuTopbarLabel = function(text)
 	menuIcon:setLabel(text or "Menu")
 end
 
-Player:GetAttributeChangedSignal(
-	"USARF_InMenu"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_InMenu"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_Loading"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_Loading"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_RadioHidden"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_RadioHidden"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_CmdrAdminLevel"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_CmdrAdminLevel"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_CmdrAdminLevelValue"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_CmdrAdminLevelValue"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_CmdrQA"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_CmdrQA"):Connect(updateTopbarVisibility)
 
-Player:GetAttributeChangedSignal(
-	"USARF_DevMode"
-):Connect(updateTopbarVisibility)
+Player:GetAttributeChangedSignal("USARF_DevMode"):Connect(updateTopbarVisibility)
 
 local mainMenu = Gui:FindFirstChild("MainMenu")
 
 if mainMenu then
-	mainMenu:GetPropertyChangedSignal(
-		"Visible"
-	):Connect(updateTopbarVisibility)
+	mainMenu:GetPropertyChangedSignal("Visible"):Connect(updateTopbarVisibility)
 end
 
 local loadingScreen = Gui:FindFirstChild("LoadingScreen")
 
 if loadingScreen then
-	loadingScreen:GetPropertyChangedSignal(
-		"Visible"
-	):Connect(updateTopbarVisibility)
+	loadingScreen:GetPropertyChangedSignal("Visible"):Connect(updateTopbarVisibility)
 end
 
 task.defer(updateTopbarVisibility)

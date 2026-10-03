@@ -1,6 +1,3 @@
--- Clans window (opened from the "Clans" top bar icon). All actions go through
--- ClanService on the server, which re-checks every permission.
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -37,19 +34,16 @@ local pages = {}
 local currentTab = "Browse"
 local myClanSubTab = "Members"
 
-local state = nil -- last GetState result
+local state = nil
 local browseClans = {}
 local selectedClanId = nil
 local selectedClan = nil
 local refreshQueued = false
 
--- Settings / create form selections (kept across re-renders)
 local createForm = { Name = "", Tag = "", Description = "" }
 local createLogoId = ClanConfig.Logos[1] and ClanConfig.Logos[1].Id
 local createColorId = ClanConfig.LogoColors[1] and ClanConfig.LogoColors[1].Id
 local editLogoId, editColorId, editDescription = nil, nil, nil
-
---// Small UI helpers
 
 local function create(className, properties)
 	local instance = Instance.new(className)
@@ -173,7 +167,6 @@ local function clearChildren(parent)
 	end
 end
 
--- A logo image tinted with the clan color, or its initials while the image isn't set yet.
 local function logoView(parent, logoId, colorId, size, properties)
 	local logo = ClanConfig.GetLogo(logoId)
 	local color = ClanConfig.GetColor(colorId)
@@ -216,7 +209,6 @@ local function logoView(parent, logoId, colorId, size, properties)
 	return holder
 end
 
--- Two clicks within 3 seconds to confirm destructive actions.
 local function confirmButton(parent, text, confirmText, properties, onConfirm)
 	local armedUntil = 0
 	local target
@@ -263,8 +255,6 @@ local function setStatus(message, isError)
 	end
 end
 
---// Server calls
-
 local function request(action, payload)
 	local success, result = pcall(function()
 		return ClanRequest:InvokeServer(action, payload)
@@ -279,7 +269,6 @@ end
 
 local renderAll
 
--- Runs a mutating action, shows its message, and reloads everything.
 local function act(action, payload)
 	setStatus("Working...")
 
@@ -297,8 +286,6 @@ local function act(action, payload)
 	return result
 end
 
---// Browse page
-
 local browseList, browseSearch, detailPane
 
 local function renderDetail()
@@ -314,9 +301,21 @@ local function renderDetail()
 
 	local clan = selectedClan
 
-	local header = create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 64), LayoutOrder = 1, Parent = detailPane })
+	local header = create(
+		"Frame",
+		{ BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 64), LayoutOrder = 1, Parent = detailPane }
+	)
 	logoView(header, clan.LogoId, clan.ColorId, 56, { Position = UDim2.fromOffset(0, 4) })
-	label(header, clan.Name, { Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(68, 6), Size = UDim2.new(1, -68, 0, 22) })
+	label(
+		header,
+		clan.Name,
+		{
+			Font = Enum.Font.GothamBold,
+			TextSize = 18,
+			Position = UDim2.fromOffset(68, 6),
+			Size = UDim2.new(1, -68, 0, 22),
+		}
+	)
 	label(header, `[{clan.Tag}]  ·  {clan.MemberCount}/{ClanConfig.MaxMembers} members`, {
 		TextColor3 = COLORS.SubText,
 		Position = UDim2.fromOffset(68, 32),
@@ -338,7 +337,8 @@ local function renderDetail()
 	local actionButton
 
 	if inClan and state.MyClan.Id == clan.Id then
-		actionButton = button(detailPane, "YOUR CLAN", { AutoButtonColor = false, BackgroundColor3 = COLORS.AccentDark })
+		actionButton =
+			button(detailPane, "YOUR CLAN", { AutoButtonColor = false, BackgroundColor3 = COLORS.AccentDark })
 	elseif inClan then
 		actionButton = button(detailPane, "ALREADY IN A CLAN", { AutoButtonColor = false })
 	elseif clan.HasRequested then
@@ -356,10 +356,28 @@ local function renderDetail()
 	actionButton.Size = UDim2.new(1, 0, 0, 34)
 	actionButton.LayoutOrder = 3
 
-	label(detailPane, "MEMBERS", { LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+	label(
+		detailPane,
+		"MEMBERS",
+		{
+			LayoutOrder = 4,
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
 
 	for index, member in ipairs(clan.Members or {}) do
-		local row = create("Frame", { BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 4 + index, Parent = detailPane })
+		local row = create(
+			"Frame",
+			{
+				BackgroundColor3 = COLORS.Row,
+				Size = UDim2.new(1, 0, 0, 30),
+				LayoutOrder = 4 + index,
+				Parent = detailPane,
+			}
+		)
 		corner(row, 6)
 		label(row, member.Name, { Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.6, -10, 1, 0) })
 		label(row, member.Rank, {
@@ -406,8 +424,21 @@ local function renderBrowseList()
 		corner(row, 8)
 
 		logoView(row, summary.LogoId, summary.ColorId, 38, { Position = UDim2.fromOffset(6, 6) })
-		label(row, `[{summary.Tag}] {summary.Name}`, { Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(52, 7), Size = UDim2.new(1, -120, 0, 18) })
-		label(row, "Leader: " .. tostring(summary.LeaderName), { TextSize = 11, TextColor3 = COLORS.SubText, Position = UDim2.fromOffset(52, 26), Size = UDim2.new(1, -120, 0, 16) })
+		label(
+			row,
+			`[{summary.Tag}] {summary.Name}`,
+			{ Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(52, 7), Size = UDim2.new(1, -120, 0, 18) }
+		)
+		label(
+			row,
+			"Leader: " .. tostring(summary.LeaderName),
+			{
+				TextSize = 11,
+				TextColor3 = COLORS.SubText,
+				Position = UDim2.fromOffset(52, 26),
+				Size = UDim2.new(1, -120, 0, 16),
+			}
+		)
 		label(row, `{summary.MemberCount}/{ClanConfig.MaxMembers}`, {
 			TextXAlignment = Enum.TextXAlignment.Right,
 			TextColor3 = COLORS.SubText,
@@ -461,8 +492,6 @@ local function buildBrowsePage(page)
 	end)
 end
 
---// My Clan page
-
 local myClanHeader, myClanTabs, myClanBody
 
 local function myRankIndex()
@@ -480,17 +509,32 @@ local function renderMembers()
 	for index, member in ipairs(clan.Members) do
 		local targetIndex = ClanConfig.GetRankIndex(member.Rank)
 		local isSelf = member.UserId == state.UserId
-		local row = create("Frame", { BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = index, Parent = myClanBody })
+		local row = create(
+			"Frame",
+			{ BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = index, Parent = myClanBody }
+		)
 		corner(row, 6)
 
-		label(row, member.Name .. (isSelf and "  (you)" or ""), { Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.34, -10, 1, 0) })
+		label(
+			row,
+			member.Name .. (isSelf and "  (you)" or ""),
+			{ Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.34, -10, 1, 0) }
+		)
 		label(row, member.Rank, {
 			Position = UDim2.new(0.34, 0, 0, 0),
 			Size = UDim2.new(0.18, 0, 1, 0),
 			TextColor3 = member.Rank == "Leader" and COLORS.Gold or COLORS.SubText,
 		})
 
-		local actions = create("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0.52, 0, 0, 5), Size = UDim2.new(0.48, -6, 1, -10), Parent = row })
+		local actions = create(
+			"Frame",
+			{
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0.52, 0, 0, 5),
+				Size = UDim2.new(0.48, -6, 1, -10),
+				Parent = row,
+			}
+		)
 		create("UIListLayout", {
 			FillDirection = Enum.FillDirection.Horizontal,
 			HorizontalAlignment = Enum.HorizontalAlignment.Right,
@@ -516,15 +560,27 @@ local function renderMembers()
 		end
 
 		if below and canDo("KickMembers") then
-			confirmButton(actions, "Kick", "Sure?", { Size = UDim2.fromOffset(48, 26), LayoutOrder = 3, BackgroundColor3 = COLORS.Danger }, function()
-				act("Kick", { UserId = member.UserId })
-			end)
+			confirmButton(
+				actions,
+				"Kick",
+				"Sure?",
+				{ Size = UDim2.fromOffset(48, 26), LayoutOrder = 3, BackgroundColor3 = COLORS.Danger },
+				function()
+					act("Kick", { UserId = member.UserId })
+				end
+			)
 		end
 
 		if not isSelf and canDo("TransferLeadership") then
-			confirmButton(actions, "Make Leader", "Confirm?", { Size = UDim2.fromOffset(84, 26), LayoutOrder = 4 }, function()
-				act("TransferLeadership", { UserId = member.UserId })
-			end)
+			confirmButton(
+				actions,
+				"Make Leader",
+				"Confirm?",
+				{ Size = UDim2.fromOffset(84, 26), LayoutOrder = 4 },
+				function()
+					act("TransferLeadership", { UserId = member.UserId })
+				end
+			)
 		end
 	end
 end
@@ -533,7 +589,11 @@ local function renderRequests()
 	local requests = state.MyClan.Requests or {}
 
 	if not canDo("ManageRequests") then
-		label(myClanBody, `Officers and above manage join requests.`, { Size = UDim2.new(1, 0, 0, 24), TextColor3 = COLORS.SubText })
+		label(
+			myClanBody,
+			`Officers and above manage join requests.`,
+			{ Size = UDim2.new(1, 0, 0, 24), TextColor3 = COLORS.SubText }
+		)
 		return
 	end
 
@@ -543,16 +603,33 @@ local function renderRequests()
 	end
 
 	for index, pending in ipairs(requests) do
-		local row = create("Frame", { BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = index, Parent = myClanBody })
+		local row = create(
+			"Frame",
+			{ BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = index, Parent = myClanBody }
+		)
 		corner(row, 6)
 		label(row, pending.Name, { Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
-		label(row, timeAgo(pending.RequestedAt), { TextColor3 = COLORS.SubText, Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0.2, 0, 1, 0) })
-		button(row, "Accept", { BackgroundColor3 = COLORS.Accent, Position = UDim2.new(1, -140, 0, 5), Size = UDim2.fromOffset(64, 26) }, function()
-			act("AcceptRequest", { UserId = pending.UserId })
-		end)
-		button(row, "Deny", { BackgroundColor3 = COLORS.Danger, Position = UDim2.new(1, -70, 0, 5), Size = UDim2.fromOffset(64, 26) }, function()
-			act("DenyRequest", { UserId = pending.UserId })
-		end)
+		label(
+			row,
+			timeAgo(pending.RequestedAt),
+			{ TextColor3 = COLORS.SubText, Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(0.2, 0, 1, 0) }
+		)
+		button(
+			row,
+			"Accept",
+			{ BackgroundColor3 = COLORS.Accent, Position = UDim2.new(1, -140, 0, 5), Size = UDim2.fromOffset(64, 26) },
+			function()
+				act("AcceptRequest", { UserId = pending.UserId })
+			end
+		)
+		button(
+			row,
+			"Deny",
+			{ BackgroundColor3 = COLORS.Danger, Position = UDim2.new(1, -70, 0, 5), Size = UDim2.fromOffset(64, 26) },
+			function()
+				act("DenyRequest", { UserId = pending.UserId })
+			end
+		)
 	end
 end
 
@@ -565,7 +642,10 @@ local function renderLog()
 	end
 
 	for index, entry in ipairs(entries) do
-		local row = create("Frame", { BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 28), LayoutOrder = index, Parent = myClanBody })
+		local row = create(
+			"Frame",
+			{ BackgroundColor3 = COLORS.Row, Size = UDim2.new(1, 0, 0, 28), LayoutOrder = index, Parent = myClanBody }
+		)
 		corner(row, 6)
 		label(row, entry.Text, { Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -90, 1, 0) })
 		label(row, timeAgo(entry.Time), {
@@ -577,8 +657,6 @@ local function renderLog()
 	end
 end
 
--- Grid of selectable logo or color swatches.
--- tintColorId previews the logo choices in the currently picked color.
 local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColor, tintColorId)
 	local grid = create("Frame", {
 		BackgroundTransparency = 1,
@@ -593,8 +671,6 @@ local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColo
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})
-	-- Room for the selection ring, which is drawn outside the cell and would otherwise be
-	-- clipped against the scrolling list's edge.
 	create("UIPadding", {
 		PaddingLeft = UDim.new(0, 6),
 		PaddingRight = UDim.new(0, 6),
@@ -616,7 +692,6 @@ local function pickerGrid(parent, layoutOrder, items, selectedId, onPick, isColo
 		corner(cell, isColor and 14 or 8)
 
 		if isSelected then
-			-- Border mode: on a TextButton a UIStroke otherwise outlines the (empty) text only.
 			create("UIStroke", {
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Color = Color3.fromRGB(255, 255, 255),
@@ -661,19 +736,49 @@ local function renderSettings()
 		editLogoId = editLogoId or clan.LogoId
 		editColorId = editColorId or clan.ColorId
 
-		label(myClanBody, "LOGO", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+		label(
+			myClanBody,
+			"LOGO",
+			{
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, 0, 0, 18),
+				Font = Enum.Font.GothamBold,
+				TextSize = 11,
+				TextColor3 = COLORS.SubText,
+			}
+		)
 		pickerGrid(myClanBody, nextOrder(), ClanConfig.Logos, editLogoId, function(id)
 			editLogoId = id
 			renderMyClan()
 		end, false, editColorId)
 
-		label(myClanBody, "LOGO COLOR", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+		label(
+			myClanBody,
+			"LOGO COLOR",
+			{
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, 0, 0, 18),
+				Font = Enum.Font.GothamBold,
+				TextSize = 11,
+				TextColor3 = COLORS.SubText,
+			}
+		)
 		pickerGrid(myClanBody, nextOrder(), ClanConfig.LogoColors, editColorId, function(id)
 			editColorId = id
 			renderMyClan()
 		end, true)
 
-		label(myClanBody, "DESCRIPTION", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+		label(
+			myClanBody,
+			"DESCRIPTION",
+			{
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, 0, 0, 18),
+				Font = Enum.Font.GothamBold,
+				TextSize = 11,
+				TextColor3 = COLORS.SubText,
+			}
+		)
 		local description = textBox(myClanBody, `Up to {ClanConfig.Description.MaxLength} characters`, {
 			LayoutOrder = nextOrder(),
 			Size = UDim2.new(1, 0, 0, 56),
@@ -682,14 +787,18 @@ local function renderSettings()
 			TextYAlignment = Enum.TextYAlignment.Top,
 			Text = editDescription or clan.Description or "",
 		})
-		-- Keep an unsaved description when picking a logo/color re-renders the tab.
 		description:GetPropertyChangedSignal("Text"):Connect(function()
 			editDescription = description.Text
 		end)
 
-		button(myClanBody, "SAVE CHANGES", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = COLORS.Accent }, function()
-			act("EditAppearance", { LogoId = editLogoId, ColorId = editColorId, Description = description.Text })
-		end)
+		button(
+			myClanBody,
+			"SAVE CHANGES",
+			{ LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = COLORS.Accent },
+			function()
+				act("EditAppearance", { LogoId = editLogoId, ColorId = editColorId, Description = description.Text })
+			end
+		)
 	else
 		label(myClanBody, "Only the Leader can change the clan's logo, color and description.", {
 			LayoutOrder = nextOrder(),
@@ -740,7 +849,16 @@ function renderMyClan()
 	end
 
 	logoView(myClanHeader, clan.LogoId, clan.ColorId, 48, { Position = UDim2.fromOffset(0, 2) })
-	label(myClanHeader, `[{clan.Tag}] {clan.Name}`, { Font = Enum.Font.GothamBold, TextSize = 17, Position = UDim2.fromOffset(60, 4), Size = UDim2.new(1, -60, 0, 22) })
+	label(
+		myClanHeader,
+		`[{clan.Tag}] {clan.Name}`,
+		{
+			Font = Enum.Font.GothamBold,
+			TextSize = 17,
+			Position = UDim2.fromOffset(60, 4),
+			Size = UDim2.new(1, -60, 0, 22),
+		}
+	)
 	label(myClanHeader, `Your rank: {clan.MyRank}  ·  {#clan.Members}/{ClanConfig.MaxMembers} members`, {
 		TextColor3 = COLORS.SubText,
 		Position = UDim2.fromOffset(60, 28),
@@ -773,21 +891,35 @@ end
 local function buildMyClanPage(page)
 	myClanHeader = create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 52), Parent = page })
 
-	myClanTabs = create("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 60), Size = UDim2.new(1, 0, 0, 28), Parent = page })
-	create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = myClanTabs })
+	myClanTabs = create(
+		"Frame",
+		{ BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 60), Size = UDim2.new(1, 0, 0, 28), Parent = page }
+	)
+	create(
+		"UIListLayout",
+		{
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = myClanTabs,
+		}
+	)
 
 	for index, name in ipairs({ "Members", "Requests", "Log", "Settings" }) do
-		local tab = button(myClanTabs, name, { Name = name, Size = UDim2.fromOffset(100, 28), LayoutOrder = index }, function()
-			myClanSubTab = name
-			renderMyClan()
-		end)
+		local tab = button(
+			myClanTabs,
+			name,
+			{ Name = name, Size = UDim2.fromOffset(100, 28), LayoutOrder = index },
+			function()
+				myClanSubTab = name
+				renderMyClan()
+			end
+		)
 		tab.Name = name
 	end
 
 	myClanBody = scrollList(page, { Position = UDim2.fromOffset(0, 96), Size = UDim2.new(1, 0, 1, -96) })
 end
-
---// Create page
 
 local createBody
 
@@ -801,7 +933,11 @@ local function renderCreate()
 	end
 
 	if state and state.MyClan then
-		label(createBody, "You're already in a clan. Leave it before creating your own.", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), TextColor3 = COLORS.SubText })
+		label(
+			createBody,
+			"You're already in a clan. Leave it before creating your own.",
+			{ LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), TextColor3 = COLORS.SubText }
+		)
 		return
 	end
 
@@ -821,23 +957,54 @@ local function renderCreate()
 			TextColor3 = COLORS.SubText,
 			TextWrapped = true,
 		})
-		button(createBody, "GET CLAN CREATOR", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = COLORS.Gold, TextColor3 = Color3.fromRGB(30, 25, 10) }, function()
-			MarketplaceService:PromptGamePassPurchase(player, ClanConfig.CreateGamepassId)
-		end)
+		button(
+			createBody,
+			"GET CLAN CREATOR",
+			{
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, 0, 0, 34),
+				BackgroundColor3 = COLORS.Gold,
+				TextColor3 = Color3.fromRGB(30, 25, 10),
+			},
+			function()
+				MarketplaceService:PromptGamePassPurchase(player, ClanConfig.CreateGamepassId)
+			end
+		)
 		return
 	end
 
-	label(createBody, "NAME", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
-	local nameBox = textBox(createBody, `{ClanConfig.Name.MinLength}-{ClanConfig.Name.MaxLength} letters, numbers or spaces`, {
-		LayoutOrder = nextOrder(),
-		Size = UDim2.new(1, 0, 0, 32),
-		Text = createForm.Name,
-	})
+	label(
+		createBody,
+		"NAME",
+		{
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
+	local nameBox =
+		textBox(createBody, `{ClanConfig.Name.MinLength}-{ClanConfig.Name.MaxLength} letters, numbers or spaces`, {
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 32),
+			Text = createForm.Name,
+		})
 	nameBox:GetPropertyChangedSignal("Text"):Connect(function()
 		createForm.Name = nameBox.Text
 	end)
 
-	label(createBody, "TAG", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+	label(
+		createBody,
+		"TAG",
+		{
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
 	local tagBox = textBox(createBody, `{ClanConfig.Tag.MinLength}-{ClanConfig.Tag.MaxLength} letters or numbers`, {
 		LayoutOrder = nextOrder(),
 		Size = UDim2.new(1, 0, 0, 32),
@@ -853,19 +1020,49 @@ local function renderCreate()
 		createForm.Tag = cleaned
 	end)
 
-	label(createBody, "LOGO", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+	label(
+		createBody,
+		"LOGO",
+		{
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
 	pickerGrid(createBody, nextOrder(), ClanConfig.Logos, createLogoId, function(id)
 		createLogoId = id
 		renderCreate()
 	end, false, createColorId)
 
-	label(createBody, "LOGO COLOR", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+	label(
+		createBody,
+		"LOGO COLOR",
+		{
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
 	pickerGrid(createBody, nextOrder(), ClanConfig.LogoColors, createColorId, function(id)
 		createColorId = id
 		renderCreate()
 	end, true)
 
-	label(createBody, "DESCRIPTION (OPTIONAL)", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 18), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = COLORS.SubText })
+	label(
+		createBody,
+		"DESCRIPTION (OPTIONAL)",
+		{
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, 0, 0, 18),
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = COLORS.SubText,
+		}
+	)
 	local descriptionBox = textBox(createBody, `Up to {ClanConfig.Description.MaxLength} characters`, {
 		LayoutOrder = nextOrder(),
 		Size = UDim2.new(1, 0, 0, 56),
@@ -878,23 +1075,26 @@ local function renderCreate()
 		createForm.Description = descriptionBox.Text
 	end)
 
-	button(createBody, "CREATE CLAN", { LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = COLORS.Accent }, function()
-		local result = act("Create", {
-			Name = createForm.Name,
-			Tag = createForm.Tag,
-			LogoId = createLogoId,
-			ColorId = createColorId,
-			Description = createForm.Description,
-		})
+	button(
+		createBody,
+		"CREATE CLAN",
+		{ LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = COLORS.Accent },
+		function()
+			local result = act("Create", {
+				Name = createForm.Name,
+				Tag = createForm.Tag,
+				LogoId = createLogoId,
+				ColorId = createColorId,
+				Description = createForm.Description,
+			})
 
-		if result.Success then
-			createForm = { Name = "", Tag = "", Description = "" }
-			currentTab = "MyClan"
+			if result.Success then
+				createForm = { Name = "", Tag = "", Description = "" }
+				currentTab = "MyClan"
+			end
 		end
-	end)
+	)
 end
-
---// Window
 
 local function updateTabs()
 	for name, tabButton in pairs(tabButtons) do
@@ -905,7 +1105,6 @@ local function updateTabs()
 		page.Visible = name == currentTab
 	end
 
-	-- Creating only makes sense while you're not in a clan.
 	tabButtons.Create.Visible = not (state and state.MyClan)
 
 	if currentTab == "Create" and state and state.MyClan then
@@ -965,7 +1164,16 @@ local function buildWindow()
 	stroke(mainFrame, 0.4)
 	create("UIScale", { Parent = mainFrame })
 
-	label(mainFrame, "CLANS", { Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(18, 12), Size = UDim2.new(1, -80, 0, 22) })
+	label(
+		mainFrame,
+		"CLANS",
+		{
+			Font = Enum.Font.GothamBold,
+			TextSize = 18,
+			Position = UDim2.fromOffset(18, 12),
+			Size = UDim2.new(1, -80, 0, 22),
+		}
+	)
 	label(mainFrame, `Anyone can join a clan · up to {ClanConfig.MaxMembers} members`, {
 		TextSize = 11,
 		TextColor3 = COLORS.SubText,
@@ -977,27 +1185,68 @@ local function buildWindow()
 		screenGui.Enabled = false
 	end)
 
-	local tabRow = create("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 60), Size = UDim2.new(1, -36, 0, 30), Parent = mainFrame })
-	create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tabRow })
+	local tabRow = create(
+		"Frame",
+		{
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(18, 60),
+			Size = UDim2.new(1, -36, 0, 30),
+			Parent = mainFrame,
+		}
+	)
+	create(
+		"UIListLayout",
+		{
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = tabRow,
+		}
+	)
 
 	for index, tab in ipairs({ { "Browse", "Browse" }, { "MyClan", "My Clan" }, { "Create", "Create" } }) do
-		tabButtons[tab[1]] = button(tabRow, tab[2], { Size = UDim2.fromOffset(130, 30), LayoutOrder = index }, function()
-			currentTab = tab[1]
-			renderAll(false)
-		end)
+		tabButtons[tab[1]] = button(
+			tabRow,
+			tab[2],
+			{ Size = UDim2.fromOffset(130, 30), LayoutOrder = index },
+			function()
+				currentTab = tab[1]
+				renderAll(false)
+			end
+		)
 	end
 
-	local content = create("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(18, 100), Size = UDim2.new(1, -36, 1, -136), Parent = mainFrame })
+	local content = create(
+		"Frame",
+		{
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(18, 100),
+			Size = UDim2.new(1, -36, 1, -136),
+			Parent = mainFrame,
+		}
+	)
 
 	for _, name in ipairs({ "Browse", "MyClan", "Create" }) do
-		pages[name] = create("Frame", { Name = name, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = content })
+		pages[name] = create(
+			"Frame",
+			{ Name = name, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = content }
+		)
 	end
 
 	buildBrowsePage(pages.Browse)
 	buildMyClanPage(pages.MyClan)
 	createBody = scrollList(pages.Create, { Size = UDim2.fromScale(1, 1) })
 
-	statusLabel = label(mainFrame, "", { TextSize = 12, TextColor3 = COLORS.SubText, Position = UDim2.new(0, 18, 1, -30), Size = UDim2.new(1, -36, 0, 20) })
+	statusLabel = label(
+		mainFrame,
+		"",
+		{
+			TextSize = 12,
+			TextColor3 = COLORS.SubText,
+			Position = UDim2.new(0, 18, 1, -30),
+			Size = UDim2.new(1, -36, 0, 20),
+		}
+	)
 
 	applyScale()
 
@@ -1021,7 +1270,6 @@ end
 
 _G.USARFToggleClans = toggle
 
--- Something changed in some clan (here or in another server): refresh if the window is open.
 ClanUpdated.OnClientEvent:Connect(function()
 	if not screenGui or not screenGui.Enabled or refreshQueued then
 		return

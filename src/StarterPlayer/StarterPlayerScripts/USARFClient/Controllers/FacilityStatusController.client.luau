@@ -88,7 +88,6 @@ local STATUS_STYLES = {
 		flash = false,
 	},
 
-	-- The rest match the statuses the facilitystatus command can set (keys are its uppercased names).
 	SECURE = {
 		text = "FACILITY SECURE",
 		subtitle = "Facility is secure.",
@@ -273,15 +272,9 @@ local function setRiotStatus()
 		local remaining = math.max(0, endsAt - os.time())
 
 		if remaining > 0 then
-			applyStatusVisual(
-				statusName,
-				"Test Subject riot active. Time remaining: " .. formatTime(remaining)
-			)
+			applyStatusVisual(statusName, "Test Subject riot active. Time remaining: " .. formatTime(remaining))
 		else
-			applyStatusVisual(
-				statusName,
-				"Test Subject riot active."
-			)
+			applyStatusVisual(statusName, "Test Subject riot active.")
 		end
 	end
 
@@ -329,8 +322,6 @@ _G.USARFSetFacilityStatus = setStatus
 
 if FacilityStatusRemote then
 	FacilityStatusRemote.OnClientEvent:Connect(function(status, subtitle)
-		-- NORMAL means "back to the live facility state", so an active riot or lockdown still
-		-- shows instead of being covered by a green banner.
 		if string.upper(tostring(status)) == "NORMAL" then
 			refreshFromFacilityState()
 			return

@@ -561,8 +561,6 @@ local function updateCanvas()
 	end)
 end
 
--- "Remaining" labels on shop cards for active timed boosts, ticked every second by the
--- countdown loop at the bottom of this script.
 local boostCountdowns = {}
 
 local function clearShopItems()
@@ -680,9 +678,7 @@ local function renderDailyStatus(status)
 	currentDailyStatus = status
 	clearRewardRows()
 
-	local rewards =
-		status
-		and status.Rewards
+	local rewards = status and status.Rewards
 		or {
 			[1] = { Cash = 250, Gold = 0 },
 			[2] = { Cash = 500, Gold = 0 },
@@ -704,7 +700,10 @@ local function renderDailyStatus(status)
 		return
 	end
 
-	dailyInfo.Text = "Current Streak: " .. tostring(status.Streak or 0) .. "   |   Next Reward: Day " .. tostring(status.NextDay or 1)
+	dailyInfo.Text = "Current Streak: "
+		.. tostring(status.Streak or 0)
+		.. "   |   Next Reward: Day "
+		.. tostring(status.NextDay or 1)
 
 	if status.CanClaim then
 		dailyStatus.Text = "Your daily reward is ready to claim."
@@ -781,7 +780,8 @@ local function createRiotCard()
 	description.Position = UDim2.new(0, 14, 0, 42)
 	description.Size = UDim2.new(1, -28, 0, 44)
 	description.Font = Enum.Font.Gotham
-	description.Text = "Starts a facility riot. Test Subjects receive weapons and temporary SC-4 access during the riot."
+	description.Text =
+		"Starts a facility riot. Test Subjects receive weapons and temporary SC-4 access during the riot."
 	description.TextColor3 = Color3.fromRGB(220, 190, 190)
 	description.TextSize = 12
 	description.TextWrapped = true
@@ -925,7 +925,8 @@ local function createItemCard(item)
 	local purchaseButton = Instance.new("TextButton")
 	purchaseButton.Position = UDim2.new(1, -118, 0.5, -18)
 	purchaseButton.Size = UDim2.new(0, 100, 0, 36)
-	purchaseButton.BackgroundColor3 = item.Currency == "Gold" and Color3.fromRGB(95, 70, 30) or Color3.fromRGB(45, 90, 55)
+	purchaseButton.BackgroundColor3 = item.Currency == "Gold" and Color3.fromRGB(95, 70, 30)
+		or Color3.fromRGB(45, 90, 55)
 	purchaseButton.BorderSizePixel = 0
 	purchaseButton.Font = Enum.Font.GothamBold
 	purchaseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1150,9 +1151,7 @@ local function renderInventory()
 
 						refreshShop()
 					else
-						statusLabel.Text =
-							(result and result.Message)
-							or "Activation failed."
+						statusLabel.Text = (result and result.Message) or "Activation failed."
 
 						activateButton.Text = "ACTIVATE"
 					end
@@ -1355,9 +1354,6 @@ task.spawn(function()
 			if selectedCategory == "Inventory" then
 				renderInventory()
 			elseif #boostCountdowns > 0 then
-				-- Tick the countdown text in place (re-rendering every second would reset the
-				-- scroll position and any in-progress purchase). Re-render once a boost ends so
-				-- its card switches back to BUY.
 				local anyExpired = false
 
 				for _, countdown in ipairs(boostCountdowns) do

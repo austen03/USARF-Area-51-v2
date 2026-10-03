@@ -1,6 +1,3 @@
--- Covert mode on the client: shows covert players' fake names in the chat
--- window, and the covert panel for certified players (topbar button or /covert).
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
@@ -16,8 +13,6 @@ local CovertRequest = Remotes:WaitForChild("CovertRequest")
 local CovertUpdated = Remotes:WaitForChild("CovertUpdated")
 
 local COVERT_NAME_ATTRIBUTE = "USARF_CovertName"
-
---// Chat window names
 
 local function escapePattern(text)
 	return (string.gsub(text, "[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"))
@@ -39,8 +34,6 @@ TextChatService.OnIncomingMessage = function(message)
 
 	return properties
 end
-
---// Panel
 
 local state = nil
 local pendingOrg = nil
@@ -248,8 +241,6 @@ local function render()
 	setToggle(clearanceButton, active and state.Clearance)
 end
 
--- Covert is offered to certified players on an allowed team, and to anyone
--- already covert (who is on the Test Subject team) so they can come back.
 local function updateAvailability()
 	local teamKey = player:GetAttribute("USARF_TeamKey")
 	local onAllowedTeam = teamKey ~= nil and CovertConfig.AllowedHomeTeams[teamKey] == true
@@ -411,7 +402,6 @@ CovertUpdated.OnClientEvent:Connect(function(newState, open)
 	end
 end)
 
--- Certifications load a moment after joining, so ask again shortly after.
 task.spawn(function()
 	request("GetState")
 	task.wait(8)

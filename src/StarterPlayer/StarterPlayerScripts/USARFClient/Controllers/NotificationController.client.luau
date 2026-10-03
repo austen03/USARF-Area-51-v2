@@ -57,7 +57,6 @@ local function getStyle(notificationType)
 	return typeStyles[notificationType] or typeStyles.Info
 end
 
--- The health panel (HealthController) sits top-left under Roblox's top bar.
 local function getVisibleHealthPanel()
 	local healthGui = playerGui:FindFirstChild("USARF_HealthUI")
 	local healthRoot = healthGui and healthGui.Enabled and healthGui:FindFirstChild("HealthRoot")
@@ -69,7 +68,6 @@ local function getVisibleHealthPanel()
 	return nil
 end
 
--- Bottom of the chat input bar, measured below the top bar; 0 when it is hidden.
 local function getChatBarBottom()
 	local success, bottom = pcall(function()
 		local chatBar = TextChatService.ChatInputBarConfiguration
@@ -84,8 +82,6 @@ local function getChatBarBottom()
 	return success and tonumber(bottom) or 0
 end
 
--- Notifications stack in the top-left, directly below the health panel (or below the chat bar
--- when it is hidden), so they never cover the radio / Protection System in the bottom-right.
 local function applyNotificationLayout()
 	local healthPanel = getVisibleHealthPanel()
 	local inset = GuiService:GetGuiInset()
@@ -93,8 +89,6 @@ local function applyNotificationLayout()
 	local top = inset.Y + getChatBarBottom() + UI_GAP
 
 	if healthPanel then
-		-- AbsolutePosition is measured below the top bar inset, but this ScreenGui ignores the
-		-- inset, so add it back to line up with the panel on screen.
 		left = healthPanel.AbsolutePosition.X + inset.X
 		top = healthPanel.AbsolutePosition.Y + inset.Y + healthPanel.AbsoluteSize.Y + UI_GAP
 	end

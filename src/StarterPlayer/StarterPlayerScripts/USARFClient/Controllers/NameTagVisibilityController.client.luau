@@ -12,8 +12,6 @@ local MAX_VISIBLE_DISTANCE_DESKTOP = 175
 local MAX_VISIBLE_DISTANCE_MOBILE = 130
 local ALWAYS_SHOW_CLOSE_DISTANCE = 18
 
--- Tags are built in pixels, so without this they stay the same size on screen at any range.
--- Full size up to SCALE_FULL_SIZE_DISTANCE, then shrink with distance like the character does.
 local SCALE_NAME = "DistanceScale"
 local SCALE_FULL_SIZE_DISTANCE = 20
 local SCALE_MIN = 0.35
@@ -172,7 +170,6 @@ local function updateTagScale(player, camera)
 end
 
 RunService.RenderStepped:Connect(function()
-	-- Scale every frame so tags resize smoothly; the line-of-sight raycasts below stay throttled.
 	local camera = getCamera()
 
 	if camera then

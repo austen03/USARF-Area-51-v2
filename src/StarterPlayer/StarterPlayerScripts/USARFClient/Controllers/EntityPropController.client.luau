@@ -2,14 +2,6 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
--- Client-side ambient motion for EE props tagged "USARF_EntityProp".
--- The model's "PropMotion" attribute picks the motion:
---   Hover - bob, slow spin and pulsing neon (EE-12)
---   Core  - pulsing orb/light with flickering beams (EE-13)
---   Blob  - breathing heartbeat throb (EE-10)
---   Halo  - spins the "HaloSpin" Motor6D (EE-07)
--- Motion is applied relative to the model's WorldPivot, so server-side PivotTo moves still work.
-
 local TAG = "USARF_EntityProp"
 local MAX_DISTANCE = 300
 
@@ -100,7 +92,6 @@ function MOTIONS.Blob(entry, t, pivot)
 			local sy = 1 + 0.06 * breath + 0.05 * beat
 			local sxz = 1 - 0.03 * breath + 0.03 * beat
 			part.Size = record.size * Vector3.new(sxz, sy, sxz)
-			-- Grow upward from the pad instead of sinking into it.
 			part.CFrame = pivot * record.rel * CFrame.new(0, record.size.Y * (sy - 1) / 2, 0)
 		elseif isNeon(part) and record.size.Magnitude < 1 then
 			part.CFrame = pivot * CFrame.new(0, 0.1 * breath + 0.08 * beat, 0) * record.rel

@@ -50,7 +50,6 @@ CmdrAdminConfig.MainServerRanks = {
 			[255] = "Owner", -- Federal Overseer
 			[22] = "Administrator", -- Federal Manager
 			[21] = "Administrator", -- Federal Administrator
-			[20] = "Developer", -- A51 v2 Developer
 			[18] = "Developer",
 			[17] = "VPOTUS_POTUS",
 			[16] = "VPOTUS_POTUS",
@@ -60,7 +59,7 @@ CmdrAdminConfig.MainServerRanks = {
 	ModerationGroup = {
 		GroupId = 8647541,
 
-		ExactRanks = {
+		MinimumRanks = {
 			[2] = "Moderator",
 		},
 	},
@@ -70,7 +69,7 @@ CmdrAdminConfig.MainServerRanks = {
 
 		MinimumRanks = {
 			{
-				Rank = 4,
+				Rank = 3,
 				Level = "Developer",
 			},
 		},

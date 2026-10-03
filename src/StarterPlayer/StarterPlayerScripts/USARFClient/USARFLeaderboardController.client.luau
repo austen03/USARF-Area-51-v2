@@ -21,7 +21,8 @@ local BOARD_POSITION = UDim2.new(1, -16, 0, 76)
 local PANEL_WIDTH = 460
 local PANEL_HEIGHT = 500
 
-local MainGroupRanks = require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
+local MainGroupRanks =
+	require(ReplicatedStorage:WaitForChild("USARF"):WaitForChild("Config"):WaitForChild("MainGroupRanks"))
 
 local MAIN_GROUP_ID = MainGroupRanks.GroupId
 local MOD_GROUP_ID = 8647541
@@ -336,7 +337,14 @@ local function showOpenCase()
 	casePanel.Visible = true
 
 	createLabel(casePanel, "Opening Case...", UDim2.new(1, -40, 0, 30), UDim2.new(0, 18, 0, 14), 16, true)
-	createLabel(casePanel, "Requesting Discord moderation case for " .. selectedPlayer.name .. "...", UDim2.new(1, -36, 0, 100), UDim2.new(0, 18, 0, 58), 13, false)
+	createLabel(
+		casePanel,
+		"Requesting Discord moderation case for " .. selectedPlayer.name .. "...",
+		UDim2.new(1, -36, 0, 100),
+		UDim2.new(0, 18, 0, 58),
+		13,
+		false
+	)
 
 	local success, data = pcall(function()
 		return openCaseFunction:InvokeServer(selectedPlayer.userId)
@@ -346,7 +354,14 @@ local function showOpenCase()
 
 	if not success or type(data) ~= "table" or data.success ~= true then
 		createLabel(casePanel, "Case Failed", UDim2.new(1, -40, 0, 30), UDim2.new(0, 18, 0, 14), 16, true)
-		createLabel(casePanel, "Unable to open a Discord moderation case.", UDim2.new(1, -36, 0, 100), UDim2.new(0, 18, 0, 58), 13, false)
+		createLabel(
+			casePanel,
+			"Unable to open a Discord moderation case.",
+			UDim2.new(1, -36, 0, 100),
+			UDim2.new(0, 18, 0, 58),
+			13,
+			false
+		)
 	else
 		createLabel(casePanel, "Case Opened", UDim2.new(1, -40, 0, 30), UDim2.new(0, 18, 0, 14), 16, true)
 		createLabel(
@@ -375,10 +390,18 @@ local function showGameWarn()
 	casePanel.Size = UDim2.new(0, 390, 0, 300)
 	casePanel.Visible = true
 
-	createLabel(casePanel, "Game Warn: " .. selectedPlayer.name, UDim2.new(1, -40, 0, 28), UDim2.new(0, 18, 0, 14), 16, true)
+	createLabel(
+		casePanel,
+		"Game Warn: " .. selectedPlayer.name,
+		UDim2.new(1, -40, 0, 28),
+		UDim2.new(0, 18, 0, 14),
+		16,
+		true
+	)
 	createLabel(casePanel, "Reason:", UDim2.new(1, -36, 0, 22), UDim2.new(0, 18, 0, 55), 13, true)
 
-	local reasonBox = createTextBox(casePanel, "Enter warning reason...", UDim2.new(1, -36, 0, 135), UDim2.new(0, 18, 0, 82), true)
+	local reasonBox =
+		createTextBox(casePanel, "Enter warning reason...", UDim2.new(1, -36, 0, 135), UDim2.new(0, 18, 0, 82), true)
 
 	createButton(casePanel, "Submit Warning", UDim2.new(0, 140, 0, 32), UDim2.new(0, 18, 1, -48), function()
 		if reasonBox.Text == "" then
@@ -446,7 +469,14 @@ local function showTeamSuspension()
 	local function redraw(reasonText)
 		clearPanel()
 
-		createLabel(casePanel, "Team Suspension: " .. selectedPlayer.name, UDim2.new(1, -40, 0, 28), UDim2.new(0, 18, 0, 14), 16, true)
+		createLabel(
+			casePanel,
+			"Team Suspension: " .. selectedPlayer.name,
+			UDim2.new(1, -40, 0, 28),
+			UDim2.new(0, 18, 0, 14),
+			16,
+			true
+		)
 
 		createLabel(casePanel, "Suspension Type", UDim2.new(1, -36, 0, 18), UDim2.new(0, 18, 0, 48), 12, true)
 
@@ -553,7 +583,13 @@ local function showTeamSuspension()
 
 		createLabel(casePanel, "Reason", UDim2.new(1, -36, 0, 18), UDim2.new(0, 18, 0, 365), 12, true)
 
-		local reasonBox = createTextBox(casePanel, "Enter suspension reason...", UDim2.new(1, -36, 0, 52), UDim2.new(0, 18, 0, 387), true)
+		local reasonBox = createTextBox(
+			casePanel,
+			"Enter suspension reason...",
+			UDim2.new(1, -36, 0, 52),
+			UDim2.new(0, 18, 0, 387),
+			true
+		)
 		reasonBox.Text = reasonText or ""
 
 		reasonBox:GetPropertyChangedSignal("Text"):Connect(function()
@@ -601,7 +637,14 @@ local function showGameBan()
 	local function redraw(reasonText)
 		clearPanel()
 
-		createLabel(casePanel, "Game Ban: " .. selectedPlayer.name, UDim2.new(1, -40, 0, 28), UDim2.new(0, 18, 0, 14), 16, true)
+		createLabel(
+			casePanel,
+			"Game Ban: " .. selectedPlayer.name,
+			UDim2.new(1, -40, 0, 28),
+			UDim2.new(0, 18, 0, 14),
+			16,
+			true
+		)
 		createLabel(casePanel, "Duration", UDim2.new(1, -36, 0, 18), UDim2.new(0, 18, 0, 52), 12, true)
 
 		for index, duration in ipairs(DURATIONS) do
@@ -623,7 +666,8 @@ local function showGameBan()
 
 		createLabel(casePanel, "Reason", UDim2.new(1, -36, 0, 18), UDim2.new(0, 18, 0, 152), 12, true)
 
-		local reasonBox = createTextBox(casePanel, "Enter ban reason...", UDim2.new(1, -36, 0, 105), UDim2.new(0, 18, 0, 174), true)
+		local reasonBox =
+			createTextBox(casePanel, "Enter ban reason...", UDim2.new(1, -36, 0, 105), UDim2.new(0, 18, 0, 174), true)
 		reasonBox.Text = reasonText or ""
 
 		reasonBox:GetPropertyChangedSignal("Text"):Connect(function()
@@ -660,10 +704,17 @@ local function copyUsername()
 	casePanel.Visible = true
 
 	createLabel(casePanel, "Copy Username", UDim2.new(1, -40, 0, 30), UDim2.new(0, 18, 0, 14), 16, true)
-	createLabel(casePanel, "Select the text below and copy it manually.", UDim2.new(1, -36, 0, 30), UDim2.new(0, 18, 0, 52), 12, false)
+	createLabel(
+		casePanel,
+		"Select the text below and copy it manually.",
+		UDim2.new(1, -36, 0, 30),
+		UDim2.new(0, 18, 0, 52),
+		12,
+		false
+	)
 
 	local usernameBox = createTextBox(casePanel, "", UDim2.new(1, -36, 0, 36), UDim2.new(0, 18, 0, 86), false)
-	-- username is the real account name, even when the row shows a covert name.
+
 	usernameBox.Text = selectedPlayer.username or selectedPlayer.name
 	usernameBox.TextEditable = false
 	usernameBox.TextXAlignment = Enum.TextXAlignment.Center
@@ -774,7 +825,6 @@ local function createPlayerRow(playerEntry, order)
 			local rawIconSize = tonumber(iconData.size) or ICON_SIZE
 			local finalIconSize = math.clamp(rawIconSize, 14, ICON_SIZE)
 
-			-- rowSize lets a single icon (e.g. the covert icon) be larger, up to the row height.
 			if tonumber(iconData.rowSize) then
 				finalIconSize = math.clamp(tonumber(iconData.rowSize), 14, ROW_HEIGHT - 2)
 			end
@@ -875,7 +925,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local pos = actionMenu.AbsolutePosition
 		local size = actionMenu.AbsoluteSize
 
-		if mouseLocation.X < pos.X or mouseLocation.X > pos.X + size.X or mouseLocation.Y < pos.Y or mouseLocation.Y > pos.Y + size.Y then
+		if
+			mouseLocation.X < pos.X
+			or mouseLocation.X > pos.X + size.X
+			or mouseLocation.Y < pos.Y
+			or mouseLocation.Y > pos.Y + size.Y
+		then
 			actionMenu.Visible = false
 		end
 	end

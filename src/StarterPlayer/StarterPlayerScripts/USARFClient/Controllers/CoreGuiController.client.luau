@@ -11,8 +11,6 @@ local function setCoreGui()
 	end)
 end
 
--- No chat window: players still press / to type, and messages show as bubbles over
--- heads. The window's channel tabs go with it.
 local function setChatLayout()
 	pcall(function()
 		TextChatService.ChatWindowConfiguration.Enabled = false

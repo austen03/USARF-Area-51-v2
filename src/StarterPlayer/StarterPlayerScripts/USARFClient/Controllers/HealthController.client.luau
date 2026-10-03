@@ -104,8 +104,6 @@ local function getResponsiveScale()
 	return 1
 end
 
--- The chat input bar sits under the top bar on the left, where this panel goes. Its
--- Absolute* values are measured below the top bar; 0 when the bar is hidden (e.g. Cmdr open).
 local function getChatBarBottom()
 	local success, bottom = pcall(function()
 		local chatBar = TextChatService.ChatInputBarConfiguration
@@ -132,8 +130,6 @@ local function applyResponsiveLayout()
 		scaleObject.Scale = scale
 	end
 
-	-- Sits just below Roblox's top bar (its height varies by device), with the notification
-	-- stack below it (NotificationController) so nothing lands on the bottom-right panels.
 	local left = 24
 
 	if viewport.X <= 900 then

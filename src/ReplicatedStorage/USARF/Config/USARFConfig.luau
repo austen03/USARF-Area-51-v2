@@ -922,7 +922,7 @@ USARFConfig.Admin = {
 
 			MinimumRanks = {
 				{
-					Rank = 4,
+					Rank = 3,
 					Level = "Developer",
 				},
 			},

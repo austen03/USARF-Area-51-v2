@@ -9,7 +9,6 @@ local function receiveAlert(payload)
 		return
 	end
 
-	-- FacilityAlertService.ClearAlerts sends only the ids to take off the list.
 	if type(payload.removeIds) == "table" then
 		if _G.USARFRemoveAnnouncements then
 			_G.USARFRemoveAnnouncements(payload.removeIds)

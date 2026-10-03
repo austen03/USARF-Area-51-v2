@@ -10,7 +10,7 @@ local GetAnnouncementsRemote = Remotes:WaitForChild("GetAnnouncements")
 
 local Gui = PlayerGui:WaitForChild("USARFGui")
 local Popups = Gui:WaitForChild("Popups")
--- Popups is a transparent, non-interactive container; if it is hidden none of its panels can show.
+
 Popups.Visible = true
 local TopBar = Gui:WaitForChild("TopBar")
 
@@ -34,9 +34,6 @@ local CATEGORY_COLORS = {
 local ANNOUNCEMENTS = {}
 local readAnnouncements = {}
 
--- Pinned notices sit above everything and never expire. Other alerts carry expiresIn
--- (seconds left, from FacilityAlertService), turned into a local os.clock() deadline so a
--- wrong PC clock can't hide them early or keep them late.
 local EXPIRY_CHECK_SECONDS = 15
 
 local function withExpiry(announcement, expiresIn)
@@ -48,7 +45,6 @@ local function withExpiry(announcement, expiresIn)
 end
 
 local function sortAnnouncements()
-	-- Stable order: pinned first, then newest first; ties keep their existing order.
 	for index, announcement in ipairs(ANNOUNCEMENTS) do
 		announcement.sortIndex = index
 	end
@@ -66,7 +62,6 @@ local function sortAnnouncements()
 	end)
 end
 
--- Returns true when something was removed.
 local function pruneExpired()
 	local now = os.clock()
 	local removed = false

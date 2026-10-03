@@ -38,9 +38,7 @@ local function getCharacterFromInstance(instance)
 	local current = instance
 
 	while current and current ~= workspace do
-		if current:IsA("Model")
-			and current:FindFirstChildOfClass("Humanoid")
-		then
+		if current:IsA("Model") and current:FindFirstChildOfClass("Humanoid") then
 			return current
 		end
 
@@ -61,8 +59,7 @@ local function getHoveredPlayer()
 	end
 
 	local character = getCharacterFromInstance(target)
-	local targetPlayer = character
-		and Players:GetPlayerFromCharacter(character)
+	local targetPlayer = character and Players:GetPlayerFromCharacter(character)
 
 	if not targetPlayer then
 		return {
@@ -71,11 +68,9 @@ local function getHoveredPlayer()
 		}
 	end
 
-	local localRoot = Player.Character
-		and Player.Character:FindFirstChild("HumanoidRootPart")
+	local localRoot = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
 
-	local targetRoot = character
-		and character:FindFirstChild("HumanoidRootPart")
+	local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
 
 	local distance = 0
 
@@ -117,10 +112,7 @@ local function getMouseWorldPosition()
 
 	local mousePosition = UserInputService:GetMouseLocation()
 
-	local ray = camera:ViewportPointToRay(
-		mousePosition.X,
-		mousePosition.Y
-	)
+	local ray = camera:ViewportPointToRay(mousePosition.X, mousePosition.Y)
 
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -134,11 +126,7 @@ local function getMouseWorldPosition()
 
 	raycastParams.FilterDescendantsInstances = excluded
 
-	local result = workspace:Raycast(
-		ray.Origin,
-		ray.Direction * 10000,
-		raycastParams
-	)
+	local result = workspace:Raycast(ray.Origin, ray.Direction * 10000, raycastParams)
 
 	if not result then
 		return {
@@ -239,7 +227,6 @@ local function enableFreecam()
 
 	camera.CameraType = Enum.CameraType.Scriptable
 
-	-- Keep the cursor visible while freecam is active.
 	UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	UserInputService.MouseIconEnabled = true
 
@@ -268,11 +255,7 @@ local function enableFreecam()
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			yaw -= input.Delta.X * LOOK_SENSITIVITY
 
-			pitch = math.clamp(
-				pitch - input.Delta.Y * LOOK_SENSITIVITY,
-				math.rad(-89),
-				math.rad(89)
-			)
+			pitch = math.clamp(pitch - input.Delta.Y * LOOK_SENSITIVITY, math.rad(-89), math.rad(89))
 		end
 	end)
 
@@ -317,9 +300,7 @@ local function enableFreecam()
 
 		local speed = BASE_SPEED
 
-		if keyDown(Enum.KeyCode.LeftShift)
-			or keyDown(Enum.KeyCode.RightShift)
-		then
+		if keyDown(Enum.KeyCode.LeftShift) or keyDown(Enum.KeyCode.RightShift) then
 			speed *= BOOST_MULTIPLIER
 		end
 
@@ -328,9 +309,7 @@ local function enableFreecam()
 		if move.Magnitude > 0 then
 			move = move.Unit
 
-			position += rotation:VectorToWorldSpace(move)
-				* speed
-				* deltaTime
+			position += rotation:VectorToWorldSpace(move) * speed * deltaTime
 		end
 
 		currentCamera.CFrame = CFrame.new(position) * rotation

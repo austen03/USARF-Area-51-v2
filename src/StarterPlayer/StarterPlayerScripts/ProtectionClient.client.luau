@@ -37,14 +37,11 @@ local lastVIPs = {}
 local lastZones = {}
 
 local BASE_WIDTH = 410
--- Kept compact so it fits above the radio HUD; both pages scroll.
 local BASE_HEIGHT = 320
 local RIGHT_PADDING = 24
 local BOTTOM_PADDING = 24
 local RADIO_GAP = 10
 
--- Pixels from the bottom of the screen to the top of the radio HUD while it is shown
--- (published by RadioController). The radio keeps the corner; this panel stacks above it.
 local RADIO_TOP_ATTRIBUTE = "USARF_RadioPanelTopOffset"
 
 local function notify(message)
@@ -124,7 +121,8 @@ local function setTab(tabName)
 	end
 
 	if trackerButton then
-		trackerButton.BackgroundColor3 = tabName == "Tracker" and Color3.fromRGB(255, 215, 90) or Color3.fromRGB(44, 44, 44)
+		trackerButton.BackgroundColor3 = tabName == "Tracker" and Color3.fromRGB(255, 215, 90)
+			or Color3.fromRGB(44, 44, 44)
 		trackerButton.TextColor3 = tabName == "Tracker" and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(255, 255, 255)
 	end
 
@@ -493,7 +491,6 @@ local function createGui()
 		vipListFrame.CanvasSize = UDim2.fromOffset(0, vipLayout.AbsoluteContentSize.Y + 12)
 	end)
 
-	-- The whole Zones page scrolls (controls + zone list) so it still works in the compact panel.
 	zonesPage = Instance.new("ScrollingFrame")
 	zonesPage.Name = "ZonesPage"
 	zonesPage.Position = UDim2.fromOffset(14, 116)
@@ -511,7 +508,8 @@ local function createGui()
 	zonesCorner.CornerRadius = UDim.new(0, 12)
 	zonesCorner.Parent = zonesPage
 
-	vipDropdown = makeButton(zonesPage, "VIPDropdown", "No VIP Available", UDim2.new(1, -16, 0, 32), UDim2.fromOffset(8, 8))
+	vipDropdown =
+		makeButton(zonesPage, "VIPDropdown", "No VIP Available", UDim2.new(1, -16, 0, 32), UDim2.fromOffset(8, 8))
 
 	dzBox = makeTextBox(zonesPage, "DZRadius", "DZ Radius", UDim2.new(0.5, -12, 0, 32), UDim2.fromOffset(8, 48))
 	kzBox = makeTextBox(zonesPage, "KZRadius", "KZ Radius", UDim2.new(0.5, -12, 0, 32), UDim2.new(0.5, 4, 0, 48))
@@ -520,9 +518,12 @@ local function createGui()
 	kzBox.Text = "10"
 
 	local createDZ = makeButton(zonesPage, "CreateDZ", "CREATE DZ", UDim2.new(0.5, -12, 0, 32), UDim2.fromOffset(8, 88))
-	local removeDZ = makeButton(zonesPage, "RemoveDZ", "REMOVE DZ", UDim2.new(0.5, -12, 0, 32), UDim2.new(0.5, 4, 0, 88))
-	local createKZ = makeButton(zonesPage, "CreateKZ", "CREATE KZ", UDim2.new(0.5, -12, 0, 32), UDim2.fromOffset(8, 128))
-	local removeKZ = makeButton(zonesPage, "RemoveKZ", "REMOVE KZ", UDim2.new(0.5, -12, 0, 32), UDim2.new(0.5, 4, 0, 128))
+	local removeDZ =
+		makeButton(zonesPage, "RemoveDZ", "REMOVE DZ", UDim2.new(0.5, -12, 0, 32), UDim2.new(0.5, 4, 0, 88))
+	local createKZ =
+		makeButton(zonesPage, "CreateKZ", "CREATE KZ", UDim2.new(0.5, -12, 0, 32), UDim2.fromOffset(8, 128))
+	local removeKZ =
+		makeButton(zonesPage, "RemoveKZ", "REMOVE KZ", UDim2.new(0.5, -12, 0, 32), UDim2.new(0.5, 4, 0, 128))
 
 	noZoneAccessLabel = Instance.new("TextLabel")
 	noZoneAccessLabel.Name = "NoZoneAccess"
@@ -536,7 +537,6 @@ local function createGui()
 	noZoneAccessLabel.Visible = false
 	noZoneAccessLabel.Parent = zonesPage
 
-	-- Grows with its rows; ZonesPage does the scrolling.
 	zonesListFrame = Instance.new("Frame")
 	zonesListFrame.Name = "ZonesList"
 	zonesListFrame.Position = UDim2.fromOffset(8, 196)
@@ -713,7 +713,6 @@ if Camera then
 	Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateResponsiveLayout)
 end
 
--- Re-stack whenever the radio HUD shows, hides or resizes.
 LocalPlayer:GetAttributeChangedSignal(RADIO_TOP_ATTRIBUTE):Connect(updateResponsiveLayout)
 
 LocalPlayer:GetPropertyChangedSignal("Team"):Connect(function()

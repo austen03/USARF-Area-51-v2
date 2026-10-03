@@ -10,7 +10,6 @@ local SettingsButton = TopBar:WaitForChild("SettingsButton")
 local AnnouncementButton = TopBar:WaitForChild("AnnouncementButton")
 
 local Popups = Gui:WaitForChild("Popups")
--- Popups is a transparent, non-interactive container; if it is hidden none of its panels can show.
 Popups.Visible = true
 local SettingsPanel = Popups:WaitForChild("SettingsPanel")
 local CloseButton = SettingsPanel:WaitForChild("CloseButton")
